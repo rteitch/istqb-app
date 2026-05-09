@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface ProgressBarProps {
   value: number;   // 0–100
@@ -10,24 +12,31 @@ interface ProgressBarProps {
 
 export default function ProgressBar({
   value,
-  color = '#3B82F6',
+  color,
   height = 8,
   showLabel = false,
 }: ProgressBarProps) {
+  const { colors } = useTheme();
   const clamped = Math.min(100, Math.max(0, value));
+  const activeColor = color || colors.primary;
 
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.track, { height }]}>
-        <View
-          style={[
-            styles.fill,
-            { width: `${clamped}%`, backgroundColor: color, height },
-          ]}
-        />
+      <View style={[styles.track, { backgroundColor: colors.border, height }]}>
+        {clamped > 0 && (
+          <LinearGradient
+            colors={[activeColor, activeColor + 'DD']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[
+              styles.fill,
+              { width: `${clamped}%`, height },
+            ]}
+          />
+        )}
       </View>
       {showLabel && (
-        <Text style={[styles.label, { color }]}>{Math.round(clamped)}%</Text>
+        <Text style={[styles.label, { color: activeColor }]}>{Math.round(clamped)}%</Text>
       )}
     </View>
   );
@@ -41,7 +50,6 @@ const styles = StyleSheet.create({
   },
   track: {
     flex: 1,
-    backgroundColor: '#E2E8F0',
     borderRadius: 99,
     overflow: 'hidden',
   },

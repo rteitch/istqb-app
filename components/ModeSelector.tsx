@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 type QuizMode = 'exam' | 'practice';
 
@@ -9,32 +10,42 @@ interface ModeSelectorProps {
 }
 
 export default function ModeSelector({ value, onChange }: ModeSelectorProps) {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={[styles.btn, value === 'practice' && styles.btnActivePractice]}
+        style={[
+          styles.btn,
+          { borderColor: colors.border, backgroundColor: colors.background },
+          value === 'practice' && { borderColor: colors.success, backgroundColor: colors.successBg },
+        ]}
         onPress={() => onChange('practice')}
         activeOpacity={0.8}
       >
         <Text style={styles.icon}>📖</Text>
-        <Text style={[styles.label, value === 'practice' && styles.labelActive]}>
+        <Text style={[styles.label, { color: colors.textMuted }, value === 'practice' && { color: colors.text }]}>
           Latihan
         </Text>
-        <Text style={[styles.sub, value === 'practice' && styles.subActive]}>
+        <Text style={[styles.sub, { color: colors.textMuted }, value === 'practice' && { color: colors.textSecondary }]}>
           Feedback langsung
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.btn, value === 'exam' && styles.btnActiveExam]}
+        style={[
+          styles.btn,
+          { borderColor: colors.border, backgroundColor: colors.background },
+          value === 'exam' && { borderColor: colors.primary, backgroundColor: colors.selected },
+        ]}
         onPress={() => onChange('exam')}
         activeOpacity={0.8}
       >
         <Text style={styles.icon}>⏱️</Text>
-        <Text style={[styles.label, value === 'exam' && styles.labelActive]}>
+        <Text style={[styles.label, { color: colors.textMuted }, value === 'exam' && { color: colors.text }]}>
           Ujian
         </Text>
-        <Text style={[styles.sub, value === 'exam' && styles.subActive]}>
+        <Text style={[styles.sub, { color: colors.textMuted }, value === 'exam' && { color: colors.textSecondary }]}>
           Ada timer + submit
         </Text>
       </TouchableOpacity>
@@ -50,19 +61,9 @@ const styles = StyleSheet.create({
   btn: {
     flex: 1,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-  },
-  btnActivePractice: {
-    borderColor: '#22C55E',
-    backgroundColor: '#F0FDF4',
-  },
-  btnActiveExam: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EFF6FF',
   },
   icon: {
     fontSize: 24,
@@ -71,18 +72,10 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#94A3B8',
-  },
-  labelActive: {
-    color: '#1E293B',
   },
   sub: {
     fontSize: 11,
-    color: '#CBD5E1',
     marginTop: 2,
     textAlign: 'center',
-  },
-  subActive: {
-    color: '#64748B',
   },
 });

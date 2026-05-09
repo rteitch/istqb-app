@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 interface EmptyStateProps {
   icon?: keyof typeof MaterialIcons.glyphMap;
@@ -9,11 +10,13 @@ interface EmptyStateProps {
 }
 
 export default function EmptyState({ icon = 'inbox', title, subtitle }: EmptyStateProps) {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
-      <MaterialIcons name={icon} size={56} color="#94A3B8" style={styles.icon} />
-      <Text style={styles.title}>{title}</Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      <MaterialIcons name={icon} size={56} color={colors.textMuted} style={styles.icon} />
+      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      {subtitle ? <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -32,13 +35,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1E293B',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#64748B',
     textAlign: 'center',
     lineHeight: 20,
   },

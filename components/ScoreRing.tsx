@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 interface ScoreRingProps {
   score: number;      // 0–100
@@ -8,10 +9,11 @@ interface ScoreRingProps {
 }
 
 export default function ScoreRing({ score, size = 120, isPassed }: ScoreRingProps) {
+  const { colors } = useTheme();
   const clamped = Math.min(100, Math.max(0, score));
   const color = isPassed !== undefined
-    ? (isPassed ? '#22C55E' : '#EF4444')
-    : clamped >= 65 ? '#22C55E' : '#EF4444';
+    ? (isPassed ? colors.success : colors.danger)
+    : clamped >= 65 ? colors.success : colors.danger;
 
   const fontSize = size * 0.28;
   const subFontSize = size * 0.12;
@@ -26,13 +28,14 @@ export default function ScoreRing({ score, size = 120, isPassed }: ScoreRingProp
           borderRadius: size / 2,
           borderColor: color,
           borderWidth: size * 0.055,
+          backgroundColor: colors.card,
         },
       ]}
     >
       <Text style={[styles.score, { fontSize, color }]}>
         {Math.round(clamped)}%
       </Text>
-      <Text style={[styles.label, { fontSize: subFontSize }]}>
+      <Text style={[styles.label, { fontSize: subFontSize, color: colors.textSecondary }]}>
         {isPassed === undefined
           ? clamped >= 65 ? 'LULUS' : 'GAGAL'
           : isPassed ? 'LULUS' : 'GAGAL'}
@@ -45,7 +48,6 @@ const styles = StyleSheet.create({
   ring: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -58,7 +60,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontWeight: '700',
-    color: '#64748B',
     marginTop: 2,
   },
 });

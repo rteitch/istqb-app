@@ -20,7 +20,7 @@ Aplikasi latihan ujian sertifikasi ISTQB (International Software Testing Qualifi
 ## 🛠 Teknologi yang Digunakan
 
 Aplikasi ini menggunakan teknologi React Native modern:
-- **Framework:** Expo SDK 54 (React Native 0.81)
+- **Framework:** Expo SDK 55 (React Native 0.83)
 - **Routing:** Expo Router v6 (File-based routing)
 - **Database:** `expo-sqlite` (dengan sistem OPFS/Origin Private File System untuk dukungan Web)
 - **State Management:** React Context API (untuk meminimalkan dependencies eksternal)
@@ -100,3 +100,8 @@ Jika Anda ingin mengatur ulang seluruh aplikasi (menghapus histori ujian dan men
 
 ## 📝 Lisensi
 Bebas untuk dimodifikasi dan dikembangkan lebih lanjut untuk keperluan pembelajaran. Selamat berlatih dan semoga lulus sertifikasi! 🎯
+
+---
+
+**Versi Aplikasi:** 1.0.0  
+**Dibuat oleh:** Rizal TH

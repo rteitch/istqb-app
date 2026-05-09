@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -9,6 +10,7 @@ interface ConfirmDialogProps {
   cancelText?: string;
   confirmColor?: string;
   destructive?: boolean;
+  requireInput?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -19,24 +21,52 @@ export default function ConfirmDialog({
   message,
   confirmText = 'OK',
   cancelText = 'Batal',
-  confirmColor = '#3B82F6',
+  confirmColor,
   destructive = false,
+  requireInput,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const btnColor = destructive ? '#EF4444' : confirmColor;
+  const { colors } = useTheme();
+  const [inputText, setInputText] = React.useState('');
+  const btnColor = destructive ? colors.danger : (confirmColor ?? colors.primary);
+  const isConfirmDisabled = requireInput ? inputText !== requireInput : false;
+
+  // Reset input when modal opens
+  React.useEffect(() => {
+    if (visible) setInputText('');
+  }, [visible]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
+
+          {requireInput && (
+            <View style={styles.inputContainer}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Ketik "{requireInput}" untuk konfirmasi:</Text>
+              <TextInput
+                style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder={requireInput}
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+              />
+            </View>
+          )}
+
           <View style={styles.row}>
-            <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={onCancel}>
-              <Text style={styles.cancelText}>{cancelText}</Text>
+            <TouchableOpacity style={[styles.btn, { backgroundColor: colors.background }]} onPress={onCancel}>
+              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>{cancelText}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.btn, { backgroundColor: btnColor }]} onPress={onConfirm}>
+            <TouchableOpacity
+              style={[styles.btn, { backgroundColor: btnColor }, isConfirmDisabled && styles.btnDisabled]}
+              onPress={onConfirm}
+              disabled={isConfirmDisabled}
+            >
               <Text style={styles.confirmText}>{confirmText}</Text>
             </TouchableOpacity>
           </View>
@@ -56,6 +86,7 @@ export function useConfirmDialog() {
     cancelText?: string;
     confirmColor?: string;
     destructive?: boolean;
+    requireInput?: string;
     onConfirm?: () => void;
   }>({ visible: false, title: '', message: '' });
 
@@ -66,6 +97,7 @@ export function useConfirmDialog() {
     cancelText?: string;
     confirmColor?: string;
     destructive?: boolean;
+    requireInput?: string;
     onConfirm?: () => void;
   }) => {
     setState({ ...opts, visible: true });
@@ -78,6 +110,7 @@ export function useConfirmDialog() {
     cancelText?: string;
     confirmColor?: string;
     destructive?: boolean;
+    requireInput?: string;
     onConfirm: () => void;
   }) => {
     setState({ ...opts, visible: true });
@@ -94,6 +127,7 @@ export function useConfirmDialog() {
       cancelText={state.cancelText}
       confirmColor={state.confirmColor}
       destructive={state.destructive}
+      requireInput={state.requireInput}
       onConfirm={() => {
         hide();
         state.onConfirm?.();
@@ -108,13 +142,11 @@ export function useConfirmDialog() {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   card: {
-    backgroundColor: 'white',
     borderRadius: 16,
     width: '100%',
     padding: 24,
@@ -123,13 +155,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1E293B',
     marginBottom: 10,
     textAlign: 'center',
   },
   message: {
     fontSize: 15,
-    color: '#64748B',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
@@ -139,17 +169,31 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 12,
   },
+  inputContainer: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1.5,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 16,
+  },
   btn: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
-  cancelBtn: {
-    backgroundColor: '#F1F5F9',
+  btnDisabled: {
+    opacity: 0.5,
   },
   cancelText: {
-    color: '#475569',
     fontSize: 16,
     fontWeight: '700',
   },

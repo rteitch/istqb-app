@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, SafeAreaView, StatusBar, Modal,
+  ActivityIndicator, SafeAreaView, StatusBar, Modal, Image
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSession, QuestionData } from './context/SessionContext';
+import { useSession, QuestionData } from '../context/SessionContext';
 import { getLevelColor } from '../constants/istqb';
 import { useConfirmDialog } from '../components/ConfirmDialog';
+import { useTheme } from '../context/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type QuizMode = 'exam' | 'practice';
 
@@ -16,16 +18,19 @@ export default function QuizScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const db = useSQLiteContext();
-  const { questions, setQuestions, answers, setAnswers, setActiveSessionId } = useSession();
+  const { colors, isDarkMode } = useTheme();
+  const { questions, setQuestions, answers, setAnswers, setActiveSessionId, saveSessionToStorage, loadSessionFromStorage, clearSavedSession } = useSession();
   const { showAlert, Dialog } = useConfirmDialog();
 
-  const category = String(params.category ?? 'CTFL');
-  const level = String(params.level ?? 'Foundation');
-  const mode = (String(params.mode ?? 'exam')) as QuizMode;
+  const isResume = params.resume === 'true';
+
+  const [category, setCategory] = useState(String(params.category ?? 'CTFL'));
+  const [level, setLevel] = useState(String(params.level ?? 'Foundation'));
+  const [mode, setMode] = useState<QuizMode>((String(params.mode ?? 'exam')) as QuizMode);
+  const [passingScore, setPassingScore] = useState(Number(params.passingScore ?? 65));
   const count = Number(params.count ?? 40);
   const durationMins = Number(params.duration ?? 60);
   const qLang = String(params.qLang ?? 'id');
-  const passingScore = Number(params.passingScore ?? 65);
 
   const levelColor = getLevelColor(level);
 
@@ -38,14 +43,37 @@ export default function QuizScreen() {
   const [showJumpModal, setShowJumpModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    fetchQuestions();
+    if (isResume) {
+      resumeSavedSession();
+    } else {
+      fetchQuestions();
+    }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  const resumeSavedSession = async () => {
+    const saved = await loadSessionFromStorage();
+    if (saved) {
+      setCategory(saved.category);
+      setLevel(saved.level);
+      setMode(saved.mode as QuizMode);
+      setPassingScore(saved.passingScore);
+      setQuestions(saved.questions);
+      setAnswers(saved.answers);
+      setRevealedAnswers(saved.revealedAnswers);
+      setCurrentIndex(saved.currentIndex);
+      setTimeLeft(saved.timeLeft);
+    } else {
+      fetchQuestions(); // fallback if not found
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (mode === 'exam' && !loading && !isPaused) {
@@ -74,7 +102,7 @@ export default function QuizScreen() {
   const fetchQuestions = async () => {
     try {
       const data = await db.getAllAsync<QuestionData>(
-        `SELECT q.id, q.category, q.level, q.correct_answer,
+        `SELECT q.id, q.category, q.level, q.correct_answer, q.image_uri,
            COALESCE(qt_target.locale, qt_fallback.locale) as locale,
            COALESCE(qt_target.question_text, qt_fallback.question_text) as question_text,
            COALESCE(qt_target.option_a, qt_fallback.option_a) as option_a,
@@ -170,6 +198,19 @@ export default function QuizScreen() {
     setShowSubmitModal(true);
   };
 
+  const saveAndExit = async () => {
+    setIsPaused(true);
+    setSaving(true);
+    await saveSessionToStorage({
+      category, level, mode, count, durationMins, qLang, passingScore,
+      questions, answers, revealedAnswers, currentIndex, timeLeft,
+      savedAt: new Date().toISOString()
+    });
+    setSaving(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    router.back();
+  };
+
   const confirmExit = () => {
     setIsPaused(true);
     setShowExitModal(true);
@@ -178,6 +219,7 @@ export default function QuizScreen() {
   const submitExam = async (isTimeUp = false) => {
     if (timerRef.current) clearInterval(timerRef.current);
     setSaving(true);
+    await clearSavedSession();
     try {
       let correct = 0;
       for (let i = 0; i < questions.length; i++) {
@@ -218,6 +260,7 @@ export default function QuizScreen() {
           explanation_b: questions[i].explanation_b,
           explanation_c: questions[i].explanation_c,
           explanation_d: questions[i].explanation_d,
+          image_uri: questions[i].image_uri,
           snapshot_at: new Date().toISOString()
         });
 
@@ -239,19 +282,19 @@ export default function QuizScreen() {
 
   if (loading || saving) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={levelColor} />
-        <Text style={styles.loadingText}>{saving ? 'Menyimpan hasil...' : 'Memuat soal...'}</Text>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{saving ? 'Menyimpan hasil...' : 'Memuat soal...'}</Text>
       </View>
     );
   }
 
   if (questions.length === 0) {
     return (
-      <View style={styles.center}>
-        <MaterialIcons name="inbox" size={52} color="#94A3B8" style={{ marginBottom: 16 }} />
-        <Text style={styles.emptyTitle}>Belum ada soal</Text>
-        <Text style={styles.emptySub}>Kategori {category} belum memiliki soal di database.</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <MaterialIcons name="inbox" size={52} color={colors.textMuted} style={{ marginBottom: 16 }} />
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum ada soal</Text>
+        <Text style={[styles.emptySub, { color: colors.textSecondary }]}>Kategori {category} belum memiliki soal di database.</Text>
         <TouchableOpacity style={[styles.backBtn, { borderColor: levelColor }]} onPress={() => router.back()}>
           <Text style={[styles.backBtnText, { color: levelColor }]}>Kembali</Text>
         </TouchableOpacity>
@@ -275,27 +318,29 @@ export default function QuizScreen() {
   const getOptionLetter = (idx: number) => String.fromCharCode(65 + idx);
 
   const getOptionStyle = (optIdx: number) => {
+    let baseStyle: any[] = [styles.option, { backgroundColor: colors.card, borderColor: colors.border }];
     if (!isRevealed) {
-      return userAnswer === optIdx ? [styles.option, styles.optionSelected] : styles.option;
+      return userAnswer === optIdx ? [...baseStyle, styles.optionSelected] : baseStyle;
     }
-    if (optIdx === currentQ.correct_answer) return [styles.option, styles.optionCorrect];
-    if (optIdx === userAnswer) return [styles.option, styles.optionWrong];
-    return [styles.option, styles.optionDimmed];
+    if (optIdx === currentQ.correct_answer) return [...baseStyle, styles.optionCorrect];
+    if (optIdx === userAnswer) return [...baseStyle, styles.optionWrong];
+    return [...baseStyle, styles.optionDimmed];
   };
 
   const getOptionTextStyle = (optIdx: number) => {
-    if (!isRevealed) return userAnswer === optIdx ? styles.optionTextSelected : styles.optionText;
+    let baseColor = { color: colors.text };
+    if (!isRevealed) return userAnswer === optIdx ? styles.optionTextSelected : [styles.optionText, baseColor];
     if (optIdx === currentQ.correct_answer) return styles.optionTextCorrect;
     if (optIdx === userAnswer) return styles.optionTextWrong;
-    return styles.optionTextDimmed;
+    return [styles.optionTextDimmed, { color: colors.textMuted }];
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor={levelColor} />
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: levelColor }]}>
+      <LinearGradient colors={[levelColor, levelColor + 'EE', levelColor + 'CC'] as [string, string, string]} style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={confirmExit} style={styles.headerBackBtn}>
             <MaterialIcons name="arrow-back" size={24} color="white" />
@@ -317,7 +362,7 @@ export default function QuizScreen() {
                 <MaterialIcons name={isPaused ? 'play-arrow' : 'pause'} size={14} color="white" />
                 <Text style={styles.headerSubmitBtnText}>{isPaused ? ' Resume' : ' Pause'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.headerSubmitBtn, { backgroundColor: '#EF4444' }]} onPress={confirmSubmit}>
+              <TouchableOpacity style={[styles.headerSubmitBtn, { backgroundColor: colors.danger }]} onPress={confirmSubmit}>
                 <Text style={styles.headerSubmitBtnText}>Kumpulkan</Text>
               </TouchableOpacity>
             </View>
@@ -329,11 +374,16 @@ export default function QuizScreen() {
         <Text style={styles.progressLabel}>
           Soal {currentIndex + 1} / {questions.length} • {answeredCount} dijawab
         </Text>
-      </View>
+      </LinearGradient>
 
       <View style={{ flex: 1 }}>
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <Text style={styles.questionText}>{currentQ.question_text}</Text>
+          {currentQ.image_uri ? (
+            <TouchableOpacity activeOpacity={0.9} onPress={() => setShowImageModal(true)}>
+              <Image source={{ uri: currentQ.image_uri }} style={styles.questionImage} />
+            </TouchableOpacity>
+          ) : null}
+          <Text style={[styles.questionText, { color: colors.text }]}>{currentQ.question_text}</Text>
 
           {optionsMap.map((opt) => (
             <TouchableOpacity
@@ -346,12 +396,14 @@ export default function QuizScreen() {
               <View style={styles.optionRow}>
                 <View style={[
                   styles.optionBadge,
+                  { backgroundColor: colors.background },
                   userAnswer === opt.index && !isRevealed && { backgroundColor: levelColor },
                   isRevealed && opt.index === currentQ.correct_answer && styles.optionBadgeCorrect,
                   isRevealed && opt.index === userAnswer && opt.index !== currentQ.correct_answer && styles.optionBadgeWrong,
                 ]}>
                   <Text style={[
                     styles.optionBadgeText,
+                    { color: colors.textSecondary },
                     (userAnswer === opt.index && !isRevealed) || (isRevealed && opt.index === currentQ.correct_answer) || (isRevealed && opt.index === userAnswer)
                       ? styles.optionBadgeTextLight
                       : null,
@@ -364,19 +416,19 @@ export default function QuizScreen() {
 
               {/* Practice mode: tampilkan penjelasan per opsi setelah reveal */}
               {isRevealed && opt.explanation && (
-                <Text style={styles.optionExplanation}>{opt.explanation}</Text>
+                <Text style={[styles.optionExplanation, { color: colors.textSecondary }]}>{opt.explanation}</Text>
               )}
             </TouchableOpacity>
           ))}
 
           {/* Practice mode: penjelasan umum setelah menjawab */}
           {isRevealed && currentQ.explanation && (
-            <View style={styles.explanationBox}>
+            <View style={[styles.explanationBox, { backgroundColor: colors.infoBg, borderLeftColor: colors.info }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                <MaterialIcons name="lightbulb" size={16} color="#0369A1" style={{ marginRight: 4 }} />
-                <Text style={styles.explanationTitle}>Penjelasan</Text>
+                <MaterialIcons name="lightbulb" size={16} color={colors.info} style={{ marginRight: 4 }} />
+                <Text style={[styles.explanationTitle, { color: colors.info }]}>Penjelasan</Text>
               </View>
-              <Text style={styles.explanationText}>{currentQ.explanation}</Text>
+              <Text style={[styles.explanationText, { color: colors.text }]}>{currentQ.explanation}</Text>
             </View>
           )}
 
@@ -384,10 +436,10 @@ export default function QuizScreen() {
         </ScrollView>
 
         {isPaused && !showExitModal && (
-          <View style={styles.pauseOverlay}>
-            <MaterialIcons name="pause-circle-filled" size={64} color="#64748B" style={{ marginBottom: 20 }} />
-            <Text style={styles.pauseTitle}>Ujian Dijeda</Text>
-            <Text style={styles.pauseSub}>Waktu berhenti sejenak. Fokus kembali saat Anda siap.</Text>
+          <View style={[styles.pauseOverlay, { backgroundColor: colors.overlay }]}>
+            <MaterialIcons name="pause-circle-filled" size={64} color={colors.textSecondary} style={{ marginBottom: 20 }} />
+            <Text style={[styles.pauseTitle, { color: colors.text }]}>Ujian Dijeda</Text>
+            <Text style={[styles.pauseSub, { color: colors.textSecondary }]}>Waktu berhenti sejenak. Fokus kembali saat Anda siap.</Text>
             <TouchableOpacity
               style={[styles.resumeBtn, { backgroundColor: levelColor }]}
               onPress={() => setIsPaused(false)}
@@ -399,21 +451,21 @@ export default function QuizScreen() {
       </View>
 
       {/* Footer Navigation */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.navBtn, currentIndex === 0 && styles.navBtnDisabled]}
+          style={[styles.navBtn, { backgroundColor: colors.background }, currentIndex === 0 && styles.navBtnDisabled]}
           onPress={handlePrev}
           disabled={currentIndex === 0}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <MaterialIcons name="chevron-left" size={20} color={currentIndex === 0 ? '#94A3B8' : '#475569'} />
-            <Text style={styles.navBtnText}>Prev</Text>
+            <MaterialIcons name="chevron-left" size={20} color={currentIndex === 0 ? colors.textMuted : colors.textSecondary} />
+            <Text style={[styles.navBtnText, { color: currentIndex === 0 ? colors.textMuted : colors.textSecondary }]}>Prev</Text>
           </View>
         </TouchableOpacity>
 
         {/* Question dot navigator (ringkas) */}
         <TouchableOpacity
-          style={[styles.indexBtn, { borderColor: levelColor }]}
+          style={[styles.indexBtn, { borderColor: levelColor, backgroundColor: colors.background }]}
           onPress={() => setShowJumpModal(true)}
         >
           <Text style={[styles.indexBtnText, { color: levelColor }]}>
@@ -428,7 +480,7 @@ export default function QuizScreen() {
             </TouchableOpacity>
           ) : (
             // Practice mode: tombol lihat hasil di akhir
-            <TouchableOpacity style={[styles.navBtn, styles.submitBtn, { backgroundColor: '#22C55E' }]} onPress={() => setShowSubmitModal(true)}>
+            <TouchableOpacity style={[styles.navBtn, styles.submitBtn, { backgroundColor: colors.success }]} onPress={() => setShowSubmitModal(true)}>
               <Text style={styles.submitBtnText}>Selesai</Text>
             </TouchableOpacity>
           )
@@ -444,16 +496,17 @@ export default function QuizScreen() {
 
       {/* Jump Question Modal */}
       <Modal visible={showJumpModal} transparent animationType="fade" onRequestClose={() => setShowJumpModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Lompat ke Soal</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Lompat ke Soal</Text>
             <ScrollView contentContainerStyle={styles.jumpGrid}>
               {questions.map((_, idx) => (
                 <TouchableOpacity
                   key={idx}
                   style={[
                     styles.jumpBtn,
-                    answers[idx] ? styles.jumpBtnAnswered : null,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    answers[idx] !== undefined ? styles.jumpBtnAnswered : null,
                     currentIndex === idx ? { borderColor: levelColor, borderWidth: 2 } : null
                   ]}
                   onPress={() => {
@@ -461,14 +514,14 @@ export default function QuizScreen() {
                     setShowJumpModal(false);
                   }}
                 >
-                  <Text style={[styles.jumpBtnText, answers[idx] !== undefined ? styles.jumpBtnTextAnswered : null]}>
+                  <Text style={[styles.jumpBtnText, { color: colors.textSecondary }, answers[idx] !== undefined ? styles.jumpBtnTextAnswered : null]}>
                     {idx + 1}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShowJumpModal(false)}>
-              <Text style={styles.modalCloseText}>Tutup</Text>
+            <TouchableOpacity style={[styles.modalCloseBtn, { backgroundColor: colors.background }]} onPress={() => setShowJumpModal(false)}>
+              <Text style={[styles.modalCloseText, { color: colors.text }]}>Tutup</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -476,20 +529,20 @@ export default function QuizScreen() {
 
       {/* Submit Confirmation Modal */}
       <Modal visible={showSubmitModal} transparent animationType="fade" onRequestClose={() => setShowSubmitModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContentSmall}>
-            <Text style={styles.modalTitle}>{mode === 'exam' ? 'Kumpulkan Ujian' : 'Selesaikan Latihan'}</Text>
-            <Text style={styles.modalSub}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.modalContentSmall, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{mode === 'exam' ? 'Kumpulkan Ujian' : 'Selesaikan Latihan'}</Text>
+            <Text style={[styles.modalSub, { color: colors.textSecondary }]}>
               {questions.length - Object.keys(answers).length > 0
                 ? `Masih ada ${questions.length - Object.keys(answers).length} soal belum dijawab. Yakin ingin mengakhiri?`
                 : 'Yakin ingin menyelesaikan ujian ini?'}
             </Text>
             <View style={styles.modalRow}>
-              <TouchableOpacity style={[styles.modalActionBtn, styles.modalCancelBtn]} onPress={() => setShowSubmitModal(false)}>
-                <Text style={styles.modalCancelText}>Batal</Text>
+              <TouchableOpacity style={[styles.modalActionBtn, styles.modalCancelBtn, { backgroundColor: colors.background }]} onPress={() => setShowSubmitModal(false)}>
+                <Text style={[styles.modalCancelText, { color: colors.text }]}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalActionBtn, { backgroundColor: mode === 'practice' ? '#22C55E' : levelColor }]}
+                style={[styles.modalActionBtn, { backgroundColor: mode === 'practice' ? colors.success : levelColor }]}
                 disabled={saving}
                 onPress={() => {
                   setShowSubmitModal(false);
@@ -505,26 +558,36 @@ export default function QuizScreen() {
 
       {/* Exit Confirmation Modal */}
       <Modal visible={showExitModal} transparent animationType="fade" onRequestClose={() => setShowExitModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContentSmall}>
-            <Text style={styles.modalTitle}>Keluar Ujian?</Text>
-            <Text style={styles.modalSub}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.modalContentSmall, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Keluar Ujian?</Text>
+            <Text style={[styles.modalSub, { color: colors.textSecondary }]}>
               Jika Anda keluar sekarang, progress ujian tidak akan disimpan. Yakin ingin keluar?
             </Text>
             <View style={styles.modalRow}>
               <TouchableOpacity
-                style={[styles.modalActionBtn, styles.modalCancelBtn]}
+                style={[styles.modalActionBtn, styles.modalCancelBtn, { backgroundColor: colors.background }]}
                 onPress={() => {
                   setShowExitModal(false);
                   setIsPaused(false);
                 }}
               >
-                <Text style={styles.modalCancelText}>Lanjut Ujian</Text>
+                <Text style={[styles.modalCancelText, { color: colors.text }]}>Lanjut Ujian</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalActionBtn, { backgroundColor: '#EF4444' }]}
+                style={[styles.modalActionBtn, { backgroundColor: colors.primary }]}
                 onPress={() => {
                   setShowExitModal(false);
+                  saveAndExit();
+                }}
+              >
+                <Text style={styles.modalConfirmText}>Simpan & Keluar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalActionBtn, { backgroundColor: colors.danger }]}
+                onPress={async () => {
+                  setShowExitModal(false);
+                  await clearSavedSession();
                   if (timerRef.current) clearInterval(timerRef.current);
                   router.back();
                 }}
@@ -536,21 +599,43 @@ export default function QuizScreen() {
         </View>
       </Modal>
 
+      {/* Image Preview Modal */}
+      <Modal visible={showImageModal} transparent animationType="fade" onRequestClose={() => setShowImageModal(false)}>
+        <TouchableOpacity
+          style={[styles.imageModalOverlay, { backgroundColor: colors.overlay }]}
+          activeOpacity={1}
+          onPress={() => setShowImageModal(false)}
+        >
+          <View style={styles.imageModalHeader}>
+            <TouchableOpacity onPress={() => setShowImageModal(false)} style={styles.imageModalClose}>
+              <MaterialIcons name="close" size={28} color="white" />
+            </TouchableOpacity>
+          </View>
+          {currentQ.image_uri ? (
+            <Image
+              source={{ uri: currentQ.image_uri }}
+              style={styles.imageModalFull}
+              resizeMode="contain"
+            />
+          ) : null}
+        </TouchableOpacity>
+      </Modal>
+
       {Dialog}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30, backgroundColor: '#F8FAFC' },
-  loadingText: { marginTop: 16, fontSize: 15, color: '#64748B' },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1E293B', marginBottom: 8 },
-  emptySub: { fontSize: 14, color: '#64748B', textAlign: 'center', marginBottom: 24 },
+  safe: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
+  loadingText: { marginTop: 16, fontSize: 15 },
+  emptyTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8 },
+  emptySub: { fontSize: 14, textAlign: 'center', marginBottom: 24 },
   backBtn: { borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 10 },
   backBtnText: { fontSize: 15, fontWeight: '700' },
   // Header
-  header: { paddingTop: 16, paddingBottom: 12, paddingHorizontal: 20 },
+  header: { paddingTop: 16, paddingBottom: 16, paddingHorizontal: 20, borderBottomLeftRadius: 20, borderBottomRightRadius: 20, elevation: 4 },
   headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   headerBackBtn: { padding: 4, marginRight: 8, marginLeft: -4 },
   categoryLabel: { flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '700' },
@@ -577,51 +662,55 @@ const styles = StyleSheet.create({
   content: { flex: 1, padding: 20 },
   questionText: {
     fontSize: 17,
-    color: '#1E293B',
     lineHeight: 26,
     marginBottom: 20,
     fontWeight: '500',
   },
+  questionImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 16,
+    resizeMode: 'contain',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
   option: {
-    backgroundColor: 'white',
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
     marginBottom: 10,
     padding: 14,
   },
-  optionSelected: { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' },
-  optionCorrect: { borderColor: '#22C55E', backgroundColor: '#F0FDF4' },
-  optionWrong: { borderColor: '#EF4444', backgroundColor: '#FEF2F2' },
+  optionSelected: { borderColor: '#1565C0', backgroundColor: 'rgba(21, 101, 192, 0.1)' },
+  optionCorrect: { borderColor: '#22C55E', backgroundColor: 'rgba(34, 197, 94, 0.1)' },
+  optionWrong: { borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)' },
   optionDimmed: { opacity: 0.5 },
   optionRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   optionBadge: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#F1F5F9',
     alignItems: 'center', justifyContent: 'center',
     marginTop: 1,
     flexShrink: 0,
   },
   optionBadgeCorrect: { backgroundColor: '#22C55E' },
   optionBadgeWrong: { backgroundColor: '#EF4444' },
-  optionBadgeText: { fontSize: 13, fontWeight: '800', color: '#64748B' },
+  optionBadgeText: { fontSize: 13, fontWeight: '800' },
   optionBadgeTextLight: { color: 'white' },
-  optionText: { flex: 1, fontSize: 15, color: '#334155', lineHeight: 22 },
-  optionTextSelected: { color: '#1D4ED8', fontWeight: '600', flex: 1, fontSize: 15, lineHeight: 22 },
-  optionTextCorrect: { color: '#15803D', fontWeight: '600', flex: 1, fontSize: 15, lineHeight: 22 },
-  optionTextWrong: { color: '#B91C1C', fontWeight: '600', flex: 1, fontSize: 15, lineHeight: 22 },
-  optionTextDimmed: { color: '#94A3B8', flex: 1, fontSize: 15, lineHeight: 22 },
-  optionExplanation: { marginTop: 8, fontSize: 12, color: '#64748B', lineHeight: 18, paddingLeft: 40 },
+  optionText: { flex: 1, fontSize: 15, lineHeight: 22 },
+  optionTextSelected: { color: '#1565C0', fontWeight: '600', flex: 1, fontSize: 15, lineHeight: 22 },
+  optionTextCorrect: { color: '#22C55E', fontWeight: '600', flex: 1, fontSize: 15, lineHeight: 22 },
+  optionTextWrong: { color: '#EF4444', fontWeight: '600', flex: 1, fontSize: 15, lineHeight: 22 },
+  optionTextDimmed: { flex: 1, fontSize: 15, lineHeight: 22 },
+  optionExplanation: { marginTop: 8, fontSize: 12, lineHeight: 18, paddingLeft: 40 },
   explanationBox: {
-    backgroundColor: '#F0F9FF',
     borderRadius: 10,
     padding: 14,
     marginTop: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#0EA5E9',
   },
-  explanationTitle: { fontSize: 13, fontWeight: '700', color: '#0369A1' },
-  explanationText: { fontSize: 13, color: '#334155', lineHeight: 20 },
+  explanationTitle: { fontSize: 13, fontWeight: '700' },
+  explanationText: { fontSize: 13, lineHeight: 20 },
   // Footer
   footer: {
     flexDirection: 'row',
@@ -629,18 +718,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'white',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
   },
   navBtn: {
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 10,
-    backgroundColor: '#F1F5F9',
   },
   navBtnDisabled: { opacity: 0.4 },
-  navBtnText: { fontSize: 14, fontWeight: '700', color: '#475569' },
+  navBtnText: { fontSize: 14, fontWeight: '700' },
   submitBtn: {},
   submitBtnText: { fontSize: 14, fontWeight: '800', color: 'white' },
   indexBtn: {
@@ -652,14 +738,13 @@ const styles = StyleSheet.create({
   indexBtnText: { fontSize: 13, fontWeight: '700' },
   pauseOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(248, 250, 252, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 30,
     zIndex: 10,
   },
-  pauseTitle: { fontSize: 24, fontWeight: '800', color: '#1E293B', marginBottom: 8 },
-  pauseSub: { fontSize: 15, color: '#64748B', textAlign: 'center', marginBottom: 32 },
+  pauseTitle: { fontSize: 24, fontWeight: '800', marginBottom: 8 },
+  pauseSub: { fontSize: 15, textAlign: 'center', marginBottom: 32 },
   resumeBtn: {
     paddingHorizontal: 32,
     paddingVertical: 14,
@@ -674,20 +759,17 @@ const styles = StyleSheet.create({
   // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: 'white',
     borderRadius: 16,
     width: '100%',
     maxHeight: '80%',
     padding: 20,
   },
   modalContentSmall: {
-    backgroundColor: 'white',
     borderRadius: 16,
     width: '100%',
     padding: 24,
@@ -696,13 +778,11 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1E293B',
     marginBottom: 16,
     textAlign: 'center',
   },
   modalSub: {
     fontSize: 15,
-    color: '#64748B',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
@@ -718,20 +798,17 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   jumpBtnAnswered: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#2563EB',
+    backgroundColor: '#1565C0',
+    borderColor: '#1E40AF',
   },
   jumpBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#64748B',
   },
   jumpBtnTextAnswered: {
     color: 'white',
@@ -739,14 +816,12 @@ const styles = StyleSheet.create({
   modalCloseBtn: {
     marginTop: 10,
     paddingVertical: 14,
-    backgroundColor: '#F1F5F9',
     borderRadius: 12,
     alignItems: 'center',
   },
   modalCloseText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#475569',
   },
   modalRow: {
     flexDirection: 'row',
@@ -760,10 +835,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalCancelBtn: {
-    backgroundColor: '#F1F5F9',
   },
   modalCancelText: {
-    color: '#475569',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -771,5 +844,30 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '700',
+  },
+  // Image preview modal
+  imageModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalHeader: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+  },
+  imageModalClose: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageModalFull: {
+    width: '92%',
+    height: '70%',
+    borderRadius: 12,
   },
 });

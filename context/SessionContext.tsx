@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface QuestionData {
   id: number;
   category: string;
   level: string;
   correct_answer: number; // 0, 1, 2, or 3
+  image_uri?: string | null;
   
   // Translation fields (Joined)
   locale: string;
@@ -47,6 +49,22 @@ export interface SessionAnswerData {
   question_snapshot: string | null; // JSON snapshot of the question
 }
 
+export interface SavedSessionData {
+  category: string;
+  level: string;
+  mode: 'exam' | 'practice';
+  count: number;
+  durationMins: number;
+  qLang: string;
+  passingScore: number;
+  questions: QuestionData[];
+  answers: { [questionIndex: number]: number };
+  revealedAnswers: Record<number, boolean>;
+  currentIndex: number;
+  timeLeft: number;
+  savedAt: string;
+}
+
 interface SessionContextType {
   // Active quiz state
   questions: QuestionData[];
@@ -56,6 +74,10 @@ interface SessionContextType {
   // Active session info (dibawa ke result screen)
   activeSessionId: number | null;
   setActiveSessionId: (id: number | null) => void;
+
+  saveSessionToStorage: (data: SavedSessionData) => Promise<void>;
+  loadSessionFromStorage: () => Promise<SavedSessionData | null>;
+  clearSavedSession: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -65,9 +87,32 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [answers, setAnswers] = useState<{ [key: number]: number }>({});
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
 
+  const saveSessionToStorage = async (data: SavedSessionData) => {
+    try {
+      await AsyncStorage.setItem('saved_exam_session', JSON.stringify(data));
+    } catch (e) { console.error('Error saving session', e); }
+  };
+
+  const loadSessionFromStorage = async () => {
+    try {
+      const json = await AsyncStorage.getItem('saved_exam_session');
+      if (json) return JSON.parse(json) as SavedSessionData;
+    } catch (e) { console.error('Error loading session', e); }
+    return null;
+  };
+
+  const clearSavedSession = async () => {
+    try {
+      await AsyncStorage.removeItem('saved_exam_session');
+    } catch (e) {}
+  };
+
   return (
     <SessionContext.Provider
-      value={{ questions, setQuestions, answers, setAnswers, activeSessionId, setActiveSessionId }}
+      value={{ 
+        questions, setQuestions, answers, setAnswers, activeSessionId, setActiveSessionId,
+        saveSessionToStorage, loadSessionFromStorage, clearSavedSession
+      }}
     >
       {children}
     </SessionContext.Provider>

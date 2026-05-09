@@ -1,18 +1,26 @@
-import React, { useState, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Image, SafeAreaView, StatusBar,
-} from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useFocusEffect } from '@react-navigation/native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { ExamSessionData } from './context/SessionContext';
+import React, { useCallback, useState } from 'react';
+import {
+  Image, SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import ProgressBar from '../components/ProgressBar';
+import { ExamSessionData } from '../context/SessionContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function HomeScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { colors, isDarkMode } = useTheme();
   const [userName, setUserName] = useState('');
   const [stats, setStats] = useState({ total: 0, passed: 0, avgScore: 0, bestScore: 0 });
   const [recentSessions, setRecentSessions] = useState<ExamSessionData[]>([]);
@@ -36,143 +44,197 @@ export default function HomeScreen() {
     } catch (e) { console.error(e); }
   };
 
+  const gradientHero: [string, string] = isDarkMode
+    ? [colors.card, colors.background]
+    : [colors.primary, colors.primaryHover];
+
+  const gradientPrimaryBtn: [string, string] = isDarkMode
+    ? [colors.primary, '#2563EB']
+    : [colors.primary, '#3B82F6'];
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#1565C0" />
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor={isDarkMode ? colors.card : colors.primary} />
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
+        <LinearGradient colors={gradientHero} style={styles.hero}>
           <View style={styles.heroTop}>
             <Image source={require('../assets/images/logo_istqbapp.png')} style={styles.logo} resizeMode="contain" />
             <TouchableOpacity style={styles.avatarBtn} onPress={() => router.push('/profile' as any)}>
-              <View style={styles.avatar}>
+              <View style={[styles.avatar, { borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.25)' }]}>
                 <Text style={styles.avatarText}>{userName ? userName.charAt(0).toUpperCase() : '?'}</Text>
               </View>
             </TouchableOpacity>
           </View>
           <Text style={styles.greeting}>{userName ? `Halo, ${userName}!` : 'Selamat Datang!'}</Text>
           <Text style={styles.greetingSub}>Siap berlatih sertifikasi ISTQB hari ini?</Text>
-        </View>
+        </LinearGradient>
 
         {stats.total > 0 ? (
           <View style={styles.statsGrid}>
             {[
-              { num: stats.total, label: 'Total Ujian', color: '#3B82F6' },
-              { num: stats.passed, label: 'Lulus', color: '#22C55E' },
-              { num: `${stats.avgScore}%`, label: 'Rata-rata', color: '#F59E0B' },
-              { num: `${stats.bestScore}%`, label: 'Terbaik', color: '#8B5CF6' },
+              { num: stats.total, label: 'Total Ujian', color: colors.info, icon: 'assessment' },
+              { num: stats.passed, label: 'Lulus', color: colors.success, icon: 'emoji-events' },
+              { num: `${stats.avgScore}%`, label: 'Rata-rata', color: colors.warning, icon: 'trending-up' },
+              { num: `${stats.bestScore}%`, label: 'Terbaik', color: colors.purple, icon: 'star' },
             ].map((s, i) => (
-              <View key={i} style={[styles.statCard, { borderTopColor: s.color }]}>
-                <Text style={[styles.statNum, { color: s.color }]}>{s.num}</Text>
-                <Text style={styles.statLabel}>{s.label}</Text>
+              <View key={i} style={[
+                styles.statCard, 
+                { backgroundColor: colors.card },
+                isDarkMode && { borderWidth: 1, borderColor: colors.border, shadowOpacity: 0 }
+              ]}>
+                <View style={[styles.statIconWrap, { backgroundColor: s.color + '15' }]}>
+                  <MaterialIcons name={s.icon as any} size={20} color={s.color} />
+                </View>
+                <Text style={[styles.statNum, { color: colors.text }]}>{s.num}</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{s.label}</Text>
               </View>
             ))}
           </View>
         ) : (
-          <View style={styles.welcomeCard}>
-            <MaterialIcons name="track-changes" size={40} color="#1565C0" style={{ marginBottom: 12 }} />
-            <Text style={styles.welcomeTitle}>Mulai Perjalananmu!</Text>
-            <Text style={styles.welcomeText}>Pilih kategori ISTQB dan mulai latihan soal pertamamu.</Text>
+          <View style={[
+            styles.welcomeCard, 
+            { backgroundColor: colors.card },
+            isDarkMode && { borderWidth: 1, borderColor: colors.border, shadowOpacity: 0 }
+          ]}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.infoBg }]}>
+               <MaterialIcons name="track-changes" size={32} color={colors.info} />
+            </View>
+            <Text style={[styles.welcomeTitle, { color: colors.text }]}>Mulai Perjalananmu!</Text>
+            <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>Pilih kategori ISTQB dan mulai latihan soal pertamamu.</Text>
           </View>
         )}
 
         <View style={styles.px}>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push('/select-category' as any)} activeOpacity={0.85}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <MaterialIcons name="rocket-launch" size={24} color="white" style={{ marginRight: 12 }} />
-              <View>
-                <Text style={styles.primaryTitle}>Mulai Ujian / Latihan</Text>
-                <Text style={styles.primarySub}>Pilih sertifikasi ISTQB yang ingin dilatih</Text>
+          <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/select-category' as any)}>
+            <LinearGradient 
+              colors={gradientPrimaryBtn} 
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={[
+                styles.primaryBtn,
+                !isDarkMode && { shadowColor: colors.primaryHover, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 10 }
+              ]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={styles.primaryIconWrap}>
+                  <MaterialIcons name="rocket-launch" size={24} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={styles.primaryTitle}>Mulai Ujian / Latihan</Text>
+                  <Text style={styles.primarySub}>Pilih sertifikasi ISTQB yang ingin dilatih</Text>
+                </View>
               </View>
-            </View>
-            <MaterialIcons name="chevron-right" size={28} color="rgba(255,255,255,0.6)" />
+              <MaterialIcons name="chevron-right" size={28} color="rgba(255,255,255,0.8)" />
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
         <View style={styles.secondaryGrid}>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => router.push('/history' as any)}>
-            <MaterialIcons name="history" size={28} color="#1E293B" style={{ marginBottom: 8 }} />
-            <Text style={styles.secondaryTitle}>Histori</Text>
-            <Text style={styles.secondarySub}>Lihat progress ujian</Text>
+          <TouchableOpacity style={[
+              styles.secondaryBtn, 
+              { backgroundColor: colors.card },
+              isDarkMode && { borderWidth: 1, borderColor: colors.border, shadowOpacity: 0 }
+            ]} onPress={() => router.push('/history' as any)}>
+            <View style={[styles.secIconWrap, { backgroundColor: colors.purple + '15' }]}>
+               <MaterialIcons name="history" size={26} color={colors.purple} />
+            </View>
+            <Text style={[styles.secondaryTitle, { color: colors.text }]}>Histori</Text>
+            <Text style={[styles.secondarySub, { color: colors.textSecondary }]}>Lihat progress ujian</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => router.push('/bank' as any)}>
-            <MaterialIcons name="folder" size={28} color="#1E293B" style={{ marginBottom: 8 }} />
-            <Text style={styles.secondaryTitle}>Bank Soal</Text>
-            <Text style={styles.secondarySub}>Kelola & tambah soal</Text>
+          <TouchableOpacity style={[
+              styles.secondaryBtn, 
+              { backgroundColor: colors.card },
+              isDarkMode && { borderWidth: 1, borderColor: colors.border, shadowOpacity: 0 }
+            ]} onPress={() => router.push('/bank' as any)}>
+            <View style={[styles.secIconWrap, { backgroundColor: colors.success + '15' }]}>
+               <MaterialIcons name="folder" size={26} color={colors.success} />
+            </View>
+            <Text style={[styles.secondaryTitle, { color: colors.text }]}>Bank Soal</Text>
+            <Text style={[styles.secondarySub, { color: colors.textSecondary }]}>Kelola & tambah soal</Text>
           </TouchableOpacity>
         </View>
 
         {recentSessions.length > 0 && (
           <View style={styles.px}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Ujian Terakhir</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Ujian Terakhir</Text>
               <TouchableOpacity onPress={() => router.push('/history' as any)} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.seeAll}>Lihat Semua </Text>
-                <MaterialIcons name="arrow-forward" size={16} color="#3B82F6" />
+                <Text style={[styles.seeAll, { color: colors.primary }]}>Lihat Semua </Text>
+                <MaterialIcons name="arrow-forward" size={16} color={colors.primary} />
               </TouchableOpacity>
             </View>
             {recentSessions.map((s) => {
               const isPassed = s.passed === 1;
               const score = Math.round(s.score_percent);
               return (
-                <TouchableOpacity key={s.id} style={styles.recentCard}
+                <TouchableOpacity key={s.id} style={[
+                    styles.recentCard, 
+                    { backgroundColor: colors.card },
+                    isDarkMode && { borderWidth: 1, borderColor: colors.border, shadowOpacity: 0 }
+                  ]}
                   onPress={() => router.push({ pathname: '/result', params: { sessionId: s.id } } as any)}>
                   <View style={styles.recentRow}>
-                    <View style={[styles.dot, { backgroundColor: isPassed ? '#22C55E' : '#EF4444' }]} />
-                    <Text style={styles.recentCat}>{s.category}</Text>
-                    <View style={[styles.badge, isPassed ? styles.badgePass : styles.badgeFail]}>
-                      <Text style={[styles.badgeText, { color: isPassed ? '#15803D' : '#B91C1C' }]}>
+                    <View style={[styles.dot, { backgroundColor: isPassed ? colors.success : colors.danger }]} />
+                    <Text style={[styles.recentCat, { color: colors.text }]}>{s.category}</Text>
+                    <View style={[styles.badge, { backgroundColor: isPassed ? colors.successBg : colors.dangerBg }]}>
+                      <Text style={[styles.badgeText, { color: isPassed ? colors.successText : colors.dangerText }]}>
                         {isPassed ? 'LULUS' : 'GAGAL'}
                       </Text>
                     </View>
-                    <Text style={[styles.recentScore, { color: isPassed ? '#22C55E' : '#EF4444' }]}>{score}%</Text>
+                    <Text style={[styles.recentScore, { color: isPassed ? colors.success : colors.danger }]}>{score}%</Text>
                   </View>
-                  <ProgressBar value={score} color={isPassed ? '#22C55E' : '#EF4444'} height={4} />
+                  <ProgressBar value={score} color={isPassed ? colors.success : colors.danger} height={6} />
                 </TouchableOpacity>
               );
             })}
           </View>
         )}
-        <View style={{ height: 40 }} />
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: colors.textMuted }]}>ISTQB APP v1.0.0</Text>
+          <Text style={[styles.footerText, { color: colors.textMuted }]}>Dibuat oleh Rizal TH</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8FAFC' },
-  hero: { backgroundColor: '#1565C0', padding: 20, paddingTop: 20, paddingBottom: 32 },
-  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  safe: { flex: 1 },
+  hero: { padding: 20, paddingTop: 20, paddingBottom: 36, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
   logo: { width: 120, height: 50 },
   avatarBtn: { padding: 4 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
+  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   avatarText: { color: 'white', fontSize: 18, fontWeight: '800' },
-  greeting: { fontSize: 22, fontWeight: '800', color: 'white', marginBottom: 4 },
-  greetingSub: { fontSize: 14, color: 'rgba(255,255,255,0.75)' },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, padding: 16, marginTop: -8 },
-  statCard: { flex: 1, minWidth: '45%', backgroundColor: 'white', borderRadius: 14, padding: 16, alignItems: 'center', borderTopWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  statNum: { fontSize: 26, fontWeight: '800' },
-  statLabel: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
-  welcomeCard: { backgroundColor: 'white', margin: 16, marginTop: 0, borderRadius: 16, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  welcomeTitle: { fontSize: 17, fontWeight: '800', color: '#1E293B', marginBottom: 6 },
-  welcomeText: { fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 20 },
-  px: { paddingHorizontal: 16, marginBottom: 12 },
-  primaryBtn: { backgroundColor: '#1565C0', borderRadius: 16, padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: '#1565C0', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  greeting: { fontSize: 24, fontWeight: '800', color: 'white', marginBottom: 6 },
+  greetingSub: { fontSize: 14, color: 'rgba(255,255,255,0.85)' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 16, marginTop: -20, marginBottom: 8 },
+  statCard: { flex: 1, minWidth: '45%', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 3 },
+  statIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  statNum: { fontSize: 24, fontWeight: '800', marginBottom: 2 },
+  statLabel: { fontSize: 12, fontWeight: '600' },
+  welcomeCard: { margin: 16, marginTop: -20, borderRadius: 16, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 3 },
+  iconCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  welcomeTitle: { fontSize: 18, fontWeight: '800', marginBottom: 8 },
+  welcomeText: { fontSize: 13, textAlign: 'center', lineHeight: 22 },
+  px: { paddingHorizontal: 16, marginBottom: 16 },
+  primaryBtn: { borderRadius: 20, padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', elevation: 4 },
+  primaryIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   primaryTitle: { fontSize: 17, fontWeight: '800', color: 'white', marginBottom: 4 },
-  primarySub: { fontSize: 12, color: 'rgba(255,255,255,0.75)' },
-  secondaryGrid: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, marginBottom: 16 },
-  secondaryBtn: { flex: 1, backgroundColor: 'white', borderRadius: 14, padding: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
-  secondaryTitle: { fontSize: 14, fontWeight: '700', color: '#1E293B', marginBottom: 2 },
-  secondarySub: { fontSize: 11, color: '#94A3B8', textAlign: 'center' },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#1E293B' },
-  seeAll: { fontSize: 13, color: '#3B82F6', fontWeight: '600' },
-  recentCard: { backgroundColor: 'white', borderRadius: 12, padding: 14, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 },
-  recentRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
+  primarySub: { fontSize: 12, color: 'rgba(255,255,255,0.9)' },
+  secondaryGrid: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, marginBottom: 20 },
+  secondaryBtn: { flex: 1, borderRadius: 16, padding: 18, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
+  secIconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  secondaryTitle: { fontSize: 15, fontWeight: '800', marginBottom: 4 },
+  secondarySub: { fontSize: 12, textAlign: 'center', lineHeight: 18 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  sectionTitle: { fontSize: 17, fontWeight: '800' },
+  seeAll: { fontSize: 13, fontWeight: '700' },
+  recentCard: { borderRadius: 14, padding: 16, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
+  recentRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  recentCat: { flex: 1, fontSize: 14, fontWeight: '700', color: '#1E293B' },
-  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  badgePass: { backgroundColor: '#DCFCE7' },
-  badgeFail: { backgroundColor: '#FEE2E2' },
+  recentCat: { flex: 1, fontSize: 14, fontWeight: '800' },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   badgeText: { fontSize: 10, fontWeight: '800' },
-  recentScore: { fontSize: 16, fontWeight: '800', minWidth: 40, textAlign: 'right' },
+  recentScore: { fontSize: 17, fontWeight: '800', minWidth: 40, textAlign: 'right' },
+  footer: { padding: 20, alignItems: 'center', justifyContent: 'center', marginTop: 10, marginBottom: 20 },
+  footerText: { fontSize: 12, marginBottom: 4, fontWeight: '500' },
 });

@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { ExamSessionData } from '../app/context/SessionContext';
-import { getLevelByCategory } from '../constants/istqb';
+import { ExamSessionData } from '../context/SessionContext';
+import { useBankTypes } from '../context/BankTypeContext';
+import { useTheme } from '../context/ThemeContext';
 import ProgressBar from './ProgressBar';
 
 interface HistoryCardProps {
@@ -23,22 +24,24 @@ const formatDate = (dateStr: string) => {
 };
 
 export default function HistoryCard({ session, onPress, onDelete }: HistoryCardProps) {
+  const { getLevelByCategory } = useBankTypes();
+  const { colors } = useTheme();
   const levelInfo = getLevelByCategory(session.category);
-  const levelColor = levelInfo?.color ?? '#1565C0';
+  const levelColor = levelInfo?.color ?? colors.primary;
   const isPassed = session.passed === 1;
   const score = Math.round(session.score_percent);
   const modeLabel = session.mode === 'practice' ? '📖 Latihan' : '⏱ Ujian';
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity style={[styles.card, { backgroundColor: colors.card }]} onPress={onPress} activeOpacity={0.85}>
       {/* Header */}
       <View style={styles.header}>
         <View style={[styles.levelDot, { backgroundColor: levelColor }]} />
-        <Text style={styles.category} numberOfLines={1}>
+        <Text style={[styles.category, { color: colors.text }]} numberOfLines={1}>
           {session.category}
         </Text>
-        <View style={[styles.statusBadge, isPassed ? styles.passedBg : styles.failedBg]}>
-          <Text style={[styles.statusText, { color: isPassed ? '#15803D' : '#B91C1C' }]}>
+        <View style={[styles.statusBadge, { backgroundColor: isPassed ? colors.successBg : colors.dangerBg }]}>
+          <Text style={[styles.statusText, { color: isPassed ? colors.successText : colors.dangerText }]}>
             {isPassed ? 'LULUS' : 'GAGAL'}
           </Text>
         </View>
@@ -46,24 +49,24 @@ export default function HistoryCard({ session, onPress, onDelete }: HistoryCardP
 
       {/* Score bar */}
       <View style={styles.scoreRow}>
-        <Text style={[styles.scoreNum, { color: isPassed ? '#22C55E' : '#EF4444' }]}>
+        <Text style={[styles.scoreNum, { color: isPassed ? colors.success : colors.danger }]}>
           {score}%
         </Text>
         <View style={styles.barWrapper}>
-          <ProgressBar value={score} color={isPassed ? '#22C55E' : '#EF4444'} height={6} />
+          <ProgressBar value={score} color={isPassed ? colors.success : colors.danger} height={6} />
         </View>
       </View>
 
       {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.meta}>{modeLabel}</Text>
-        <Text style={styles.meta}>
+      <View style={[styles.footer, { borderTopColor: colors.border }]}>
+        <Text style={[styles.meta, { color: colors.textMuted }]}>{modeLabel}</Text>
+        <Text style={[styles.meta, { color: colors.textMuted }]}>
           {session.correct_answers}/{session.total_questions} benar
         </Text>
-        <Text style={styles.meta}>{formatDate(session.finished_at)}</Text>
+        <Text style={[styles.meta, { color: colors.textMuted }]}>{formatDate(session.finished_at)}</Text>
         {onDelete && (
           <TouchableOpacity onPress={onDelete} style={styles.deleteBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <MaterialIcons name="delete-outline" size={16} color="#EF4444" />
+            <MaterialIcons name="delete-outline" size={16} color={colors.danger} />
           </TouchableOpacity>
         )}
       </View>
@@ -73,7 +76,6 @@ export default function HistoryCard({ session, onPress, onDelete }: HistoryCardP
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
@@ -98,15 +100,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '700',
-    color: '#1E293B',
   },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 20,
   },
-  passedBg: { backgroundColor: '#DCFCE7' },
-  failedBg: { backgroundColor: '#FEE2E2' },
   statusText: {
     fontSize: 11,
     fontWeight: '800',
@@ -130,12 +129,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
     paddingTop: 10,
   },
   meta: {
     fontSize: 11,
-    color: '#94A3B8',
   },
   deleteBtn: {
     padding: 2,

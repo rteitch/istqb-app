@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import * as SQLite from 'expo-sqlite';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Language = 'id' | 'en';
 
@@ -49,7 +49,7 @@ const translations: Record<Language, Translations> = {
     addQuestion: 'Tambah Soal',
     language: 'Bahasa UI',
     minutes: 'Menit',
-    questionLang: 'Bahasa Soal'
+    questionLang: 'Bahasa Soal',
   },
   en: {
     title: 'ISTQB CTFL 4.0 Practice Exam',
@@ -72,8 +72,8 @@ const translations: Record<Language, Translations> = {
     addQuestion: 'Add Question',
     language: 'UI Language',
     minutes: 'Minutes',
-    questionLang: 'Question Language'
-  }
+    questionLang: 'Question Language',
+  },
 };
 
 interface I18nContextType {
@@ -84,43 +84,33 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
-const SETTINGS_DB = 'istqb_settings.db';
+const LANG_STORAGE_KEY = '@istqb_ui_lang';
 
 export const I18nProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLangState] = useState<Language>('id');
   const [loaded, setLoaded] = useState(false);
 
-  // Load saved language on mount
+  // Load saved language on mount using AsyncStorage
   useEffect(() => {
-    (async () => {
-      try {
-        const db = await SQLite.openDatabaseAsync(SETTINGS_DB);
-        await db.execAsync(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
-        const row = await db.getFirstAsync<{ value: string }>('SELECT value FROM settings WHERE key = ?', ['ui_lang']);
-        if (row && (row.value === 'id' || row.value === 'en')) {
-          setLangState(row.value);
+    AsyncStorage.getItem(LANG_STORAGE_KEY)
+      .then((saved) => {
+        if (saved === 'id' || saved === 'en') {
+          setLangState(saved);
         }
-        await db.closeAsync();
-      } catch {
+      })
+      .catch(() => {
         // fallback to default 'id'
-      } finally {
+      })
+      .finally(() => {
         setLoaded(true);
-      }
-    })();
+      });
   }, []);
 
-  const setLang = async (newLang: Language) => {
+  const setLang = (newLang: Language) => {
     setLangState(newLang);
-    try {
-      const db = await SQLite.openDatabaseAsync(SETTINGS_DB);
-      await db.runAsync(
-        `INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`,
-        ['ui_lang', newLang]
-      );
-      await db.closeAsync();
-    } catch {
+    AsyncStorage.setItem(LANG_STORAGE_KEY, newLang).catch(() => {
       // silently fail
-    }
+    });
   };
 
   if (!loaded) return null;

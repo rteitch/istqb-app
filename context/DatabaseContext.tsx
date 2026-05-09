@@ -1,11 +1,13 @@
 import React, { Component, ReactNode, useEffect, useState, useCallback } from 'react';
 import {
   Platform, View, Text, ActivityIndicator,
-  TouchableOpacity, StyleSheet,
+  TouchableOpacity, StyleSheet
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as SQLite from 'expo-sqlite';
-import questionsData from '../../data/questions_id_ctfl.json';
-import questionsEnData from '../../data/questions_en_ctfl.json';
+import questionsData from '../data/questions_id_ctfl.json';
+import questionsEnData from '../data/questions_en_ctfl.json';
+import { ISTQB_LEVELS } from '../constants/istqb';
 
 // ─── Migrations ───────────────────────────────────────────────────────────────
 
@@ -143,6 +145,85 @@ const runMigrations = async (db: SQLite.SQLiteDatabase) => {
       await db.execAsync('PRAGMA foreign_key_check;');
     }
   }
+
+  if (currentVersion < 3) {
+    await db.execAsync('PRAGMA foreign_keys = OFF;');
+    try {
+      await db.execAsync(`
+        BEGIN TRANSACTION;
+        
+        CREATE TABLE IF NOT EXISTS levels (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          level_name TEXT UNIQUE NOT NULL,
+          description TEXT,
+          color TEXT,
+          light_color TEXT,
+          icon TEXT,
+          image_uri TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS categories (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          code TEXT UNIQUE NOT NULL,
+          level_name TEXT NOT NULL,
+          name TEXT NOT NULL,
+          short_name TEXT NOT NULL,
+          default_questions INTEGER,
+          default_duration INTEGER,
+          passing_score INTEGER,
+          image_uri TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (level_name) REFERENCES levels(level_name) ON DELETE CASCADE
+        );
+      `);
+
+      // Seed initial dynamic levels & categories from constants
+      for (const level of ISTQB_LEVELS) {
+        await db.runAsync(
+          `INSERT OR IGNORE INTO levels (level_name, description, color, light_color, icon) VALUES (?, ?, ?, ?, ?)`,
+          [level.level, level.description, level.color, level.lightColor, level.icon]
+        );
+        for (const cat of level.categories) {
+          await db.runAsync(
+            `INSERT OR IGNORE INTO categories (code, level_name, name, short_name, default_questions, default_duration, passing_score) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [cat.code, level.level, cat.name, cat.shortName, cat.defaultQuestions, cat.defaultDuration, cat.passingScore]
+          );
+        }
+      }
+
+      await db.execAsync(`
+        INSERT INTO schema_migrations (version) VALUES (3);
+        COMMIT;
+      `);
+    } catch (e) {
+      await db.execAsync('ROLLBACK;');
+      console.error('Migration v3 failed:', e);
+      throw e;
+    } finally {
+      await db.execAsync('PRAGMA foreign_keys = ON;');
+      await db.execAsync('PRAGMA foreign_key_check;');
+    }
+  }
+
+  if (currentVersion < 4) {
+    await db.execAsync('PRAGMA foreign_keys = OFF;');
+    try {
+      await db.execAsync(`
+        BEGIN TRANSACTION;
+        ALTER TABLE questions ADD COLUMN image_uri TEXT;
+        INSERT INTO schema_migrations (version) VALUES (4);
+        COMMIT;
+      `);
+    } catch (e) {
+      await db.execAsync('ROLLBACK;');
+      console.error('Migration v4 failed:', e);
+      throw e;
+    } finally {
+      await db.execAsync('PRAGMA foreign_keys = ON;');
+      await db.execAsync('PRAGMA foreign_key_check;');
+    }
+  }
 };
 
 const seedInitialData = async (db: SQLite.SQLiteDatabase) => {
@@ -221,7 +302,9 @@ class SQLiteErrorBoundary extends Component<BoundaryProps, BoundaryState> {
   static getDerivedStateFromError(): BoundaryState { return { caught: true }; }
   componentDidCatch(error: Error) {
     if (error?.message?.includes('createSyncAccessHandle') ||
-        error?.message?.includes('Access Handle')) {
+        error?.message?.includes('Access Handle') ||
+        error?.message?.includes('Invalid VFS state') ||
+        error?.message?.includes('VFS')) {
       setTimeout(() => this.props.onOPFSError(), 0);
     }
   }
@@ -281,6 +364,12 @@ export const AppDatabaseProvider = ({ children }: { children: ReactNode }) => {
   if (phase === 'loading') {
     return (
       <View style={s.center}>
+        <Image 
+          source={require('../assets/images/logo_istqbapp.png')} 
+          style={s.loadingLogo} 
+          contentFit="contain" 
+          transition={300}
+        />
         <ActivityIndicator size="large" color="#3B82F6" />
         <Text style={s.loadTitle}>Mempersiapkan database...</Text>
         <Text style={s.loadSub}>Mohon tunggu sebentar</Text>
@@ -349,4 +438,5 @@ const s = StyleSheet.create({
     width: '100%', alignItems: 'center',
   },
   reloadBtnText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
+  loadingLogo: { width: 120, height: 120, marginBottom: 24 },
 });
