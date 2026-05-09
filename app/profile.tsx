@@ -1,8 +1,8 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useCallback } from 'react';
-import {
+import { 
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ScrollView, SafeAreaView, StatusBar,
-} from 'react-native';
+  ScrollView,  StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useFocusEffect } from '@react-navigation/native';
@@ -259,7 +259,7 @@ export default function ProfileScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <MaterialIcons name="light-mode" size={18} color={!isDarkMode ? colors.selectedText : colors.textMuted} style={{ marginRight: 6 }} />
-                <Text style={[styles.langText, { color: colors.textMuted }, !isDarkMode && { color: colors.selectedText }]}>Terang</Text>
+                <Text style={[styles.langText, { color: colors.textMuted }, !isDarkMode && { color: colors.selectedText }]} adjustsFontSizeToFit numberOfLines={1}>Terang</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -272,7 +272,7 @@ export default function ProfileScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <MaterialIcons name="dark-mode" size={18} color={isDarkMode ? colors.selectedText : colors.textMuted} style={{ marginRight: 6 }} />
-                <Text style={[styles.langText, { color: colors.textMuted }, isDarkMode && { color: colors.selectedText }]}>Gelap</Text>
+                <Text style={[styles.langText, { color: colors.textMuted }, isDarkMode && { color: colors.selectedText }]} adjustsFontSizeToFit numberOfLines={1}>Gelap</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -293,8 +293,8 @@ export default function ProfileScreen() {
                 onPress={() => setLang(l)}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <MaterialIcons name="language" size={18} color={lang === l ? colors.selectedText : colors.textMuted} style={{ marginRight: 6 }} />
-                  <Text style={[styles.langText, { color: colors.textMuted }, lang === l && { color: colors.selectedText }]}>
+                  <MaterialIcons name="language" size={18} color={lang === l ? colors.selectedText : colors.textMuted} style={{ marginRight: 6, flexShrink: 0 }} />
+                  <Text style={[styles.langText, { color: colors.textMuted }, lang === l && { color: colors.selectedText }]} adjustsFontSizeToFit numberOfLines={1}>
                     {l === 'id' ? 'Indonesia' : 'English'}
                   </Text>
                 </View>
@@ -310,10 +310,10 @@ export default function ProfileScreen() {
             {categoryStats.map((s, idx) => (
               <View key={s.category} style={[styles.statRow, { borderBottomColor: colors.border }, idx === categoryStats.length - 1 && { borderBottomWidth: 0 }]}>
                 <View style={styles.statLeft}>
-                  <Text style={[styles.statCat, { color: colors.text }]}>{s.category}</Text>
+                  <Text style={[styles.statCat, { color: colors.text }]} adjustsFontSizeToFit numberOfLines={1}>{s.category}</Text>
                   <Text style={[styles.statSub, { color: colors.textSecondary }]}>{s.total} ujian • {s.passed} lulus</Text>
                 </View>
-                <Text style={[styles.statAvg, { color: colors.primary }]}>{Math.round(s.avg_score)}%</Text>
+                <Text style={[styles.statAvg, { color: colors.primary }]} adjustsFontSizeToFit numberOfLines={1}>{Math.round(s.avg_score)}%</Text>
               </View>
             ))}
           </View>
@@ -332,8 +332,8 @@ export default function ProfileScreen() {
                 style={styles.resetBtn}
              >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialIcons name="file-download" size={20} color="white" style={{ marginRight: 8 }} />
-                <Text style={styles.resetBtnText}>Import Soal Default (CTFL)</Text>
+                <MaterialIcons name="file-download" size={20} color="white" style={{ marginRight: 8, flexShrink: 0 }} />
+                <Text style={styles.resetBtnText} adjustsFontSizeToFit numberOfLines={1}>Import Soal Default (CTFL)</Text>
               </View>
             </LinearGradient>
           </TouchableOpacity>
@@ -344,8 +344,8 @@ export default function ProfileScreen() {
                 style={styles.resetBtn}
              >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialIcons name="delete-forever" size={20} color="white" style={{ marginRight: 8 }} />
-                <Text style={styles.resetBtnText}>Kosongkan Semua Data</Text>
+                <MaterialIcons name="delete-forever" size={20} color="white" style={{ marginRight: 8, flexShrink: 0 }} />
+                <Text style={styles.resetBtnText} adjustsFontSizeToFit numberOfLines={1}>Kosongkan Semua Data</Text>
               </View>
             </LinearGradient>
           </TouchableOpacity>

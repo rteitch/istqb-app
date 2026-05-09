@@ -1,17 +1,17 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import React, { useCallback, useState } from 'react';
-import {
-  Image, SafeAreaView,
+import { 
+  Image, 
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
-} from 'react-native';
+  View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import ProgressBar from '../components/ProgressBar';
 import { ExamSessionData } from '../context/SessionContext';
@@ -113,16 +113,16 @@ export default function HomeScreen() {
                 styles.primaryBtn,
                 !isDarkMode && { shadowColor: colors.primaryHover, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 10 }
               ]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 10 }}>
                 <View style={styles.primaryIconWrap}>
                   <MaterialIcons name="rocket-launch" size={24} color={colors.primary} />
                 </View>
-                <View>
-                  <Text style={styles.primaryTitle}>Mulai Ujian / Latihan</Text>
-                  <Text style={styles.primarySub}>Pilih sertifikasi ISTQB yang ingin dilatih</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.primaryTitle} adjustsFontSizeToFit numberOfLines={1}>Mulai Ujian / Latihan</Text>
+                  <Text style={styles.primarySub} adjustsFontSizeToFit numberOfLines={1}>Pilih sertifikasi ISTQB yang ingin dilatih</Text>
                 </View>
               </View>
-              <MaterialIcons name="chevron-right" size={28} color="rgba(255,255,255,0.8)" />
+              <MaterialIcons name="chevron-right" size={28} color="rgba(255,255,255,0.8)" style={{ flexShrink: 0 }} />
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -136,8 +136,8 @@ export default function HomeScreen() {
             <View style={[styles.secIconWrap, { backgroundColor: colors.purple + '15' }]}>
                <MaterialIcons name="history" size={26} color={colors.purple} />
             </View>
-            <Text style={[styles.secondaryTitle, { color: colors.text }]}>Histori</Text>
-            <Text style={[styles.secondarySub, { color: colors.textSecondary }]}>Lihat progress ujian</Text>
+            <Text style={[styles.secondaryTitle, { color: colors.text }]} adjustsFontSizeToFit numberOfLines={1}>Histori</Text>
+            <Text style={[styles.secondarySub, { color: colors.textSecondary }]} adjustsFontSizeToFit numberOfLines={1}>Lihat progress ujian</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[
               styles.secondaryBtn, 
@@ -147,8 +147,8 @@ export default function HomeScreen() {
             <View style={[styles.secIconWrap, { backgroundColor: colors.success + '15' }]}>
                <MaterialIcons name="folder" size={26} color={colors.success} />
             </View>
-            <Text style={[styles.secondaryTitle, { color: colors.text }]}>Bank Soal</Text>
-            <Text style={[styles.secondarySub, { color: colors.textSecondary }]}>Kelola & tambah soal</Text>
+            <Text style={[styles.secondaryTitle, { color: colors.text }]} adjustsFontSizeToFit numberOfLines={1}>Bank Soal</Text>
+            <Text style={[styles.secondarySub, { color: colors.textSecondary }]} adjustsFontSizeToFit numberOfLines={1}>Kelola & tambah soal</Text>
           </TouchableOpacity>
         </View>
 
@@ -220,8 +220,8 @@ const styles = StyleSheet.create({
   primaryIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   primaryTitle: { fontSize: 17, fontWeight: '800', color: 'white', marginBottom: 4 },
   primarySub: { fontSize: 12, color: 'rgba(255,255,255,0.9)' },
-  secondaryGrid: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, marginBottom: 20 },
-  secondaryBtn: { flex: 1, borderRadius: 16, padding: 18, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
+  secondaryGrid: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, marginBottom: 20, flexWrap: 'wrap' },
+  secondaryBtn: { flex: 1, minWidth: '45%', borderRadius: 16, padding: 18, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
   secIconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   secondaryTitle: { fontSize: 15, fontWeight: '800', marginBottom: 4 },
   secondarySub: { fontSize: 12, textAlign: 'center', lineHeight: 18 },

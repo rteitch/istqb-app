@@ -1,8 +1,9 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect, useRef } from 'react';
-import {
+import { 
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, SafeAreaView, StatusBar, Modal, Image
-} from 'react-native';
+  ActivityIndicator,  StatusBar, Modal, Image
+ } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -359,11 +360,11 @@ export default function QuizScreen() {
                 style={styles.headerSubmitBtn}
                 onPress={() => setIsPaused(!isPaused)}
               >
-                <MaterialIcons name={isPaused ? 'play-arrow' : 'pause'} size={14} color="white" />
-                <Text style={styles.headerSubmitBtnText}>{isPaused ? ' Resume' : ' Pause'}</Text>
+                <MaterialIcons name={isPaused ? 'play-arrow' : 'pause'} size={14} color="white" style={{ flexShrink: 0 }} />
+                <Text style={styles.headerSubmitBtnText} adjustsFontSizeToFit numberOfLines={1}>{isPaused ? ' Resume' : ' Pause'}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.headerSubmitBtn, { backgroundColor: colors.danger }]} onPress={confirmSubmit}>
-                <Text style={styles.headerSubmitBtnText}>Kumpulkan</Text>
+                <Text style={styles.headerSubmitBtnText} adjustsFontSizeToFit numberOfLines={1}>Kumpulkan</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -458,8 +459,8 @@ export default function QuizScreen() {
           disabled={currentIndex === 0}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <MaterialIcons name="chevron-left" size={20} color={currentIndex === 0 ? colors.textMuted : colors.textSecondary} />
-            <Text style={[styles.navBtnText, { color: currentIndex === 0 ? colors.textMuted : colors.textSecondary }]}>Prev</Text>
+            <MaterialIcons name="chevron-left" size={20} color={currentIndex === 0 ? colors.textMuted : colors.textSecondary} style={{ flexShrink: 0 }} />
+            <Text style={[styles.navBtnText, { color: currentIndex === 0 ? colors.textMuted : colors.textSecondary }]} adjustsFontSizeToFit numberOfLines={1}>Prev</Text>
           </View>
         </TouchableOpacity>
 
@@ -487,8 +488,8 @@ export default function QuizScreen() {
         ) : (
           <TouchableOpacity style={[styles.navBtn, { backgroundColor: levelColor }]} onPress={handleNext}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={[styles.navBtnText, { color: 'white' }]}>Next</Text>
-              <MaterialIcons name="chevron-right" size={20} color="white" />
+              <Text style={[styles.navBtnText, { color: 'white' }]} adjustsFontSizeToFit numberOfLines={1}>Next</Text>
+              <MaterialIcons name="chevron-right" size={20} color="white" style={{ flexShrink: 0 }} />
             </View>
           </TouchableOpacity>
         )}

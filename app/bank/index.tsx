@@ -1,8 +1,9 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useCallback } from 'react';
-import {
+import { 
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, SafeAreaView, StatusBar, ScrollView, RefreshControl
-} from 'react-native';
+  TextInput,  StatusBar, ScrollView, RefreshControl
+ } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { MaterialIcons } from '@expo/vector-icons';
