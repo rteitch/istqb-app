@@ -74,6 +74,46 @@ npm start
 
 ---
 
+## 📱 Panduan Build APK (Android)
+
+Untuk mengubah proyek ini menjadi file `.apk` yang bisa diinstal di HP Android, kami menggunakan **EAS Build**. Ikuti langkah-langkah berikut:
+
+### 1. Instalasi EAS CLI
+Pastikan Anda sudah memiliki akun Expo, lalu instal EAS CLI secara global:
+```bash
+npm install -g eas-cli
+```
+
+### 2. Login & Konfigurasi
+Lakukan login ke akun Expo Anda dan inisialisasi konfigurasi build:
+```bash
+eas login
+eas build:configure
+```
+
+### 3. Konfigurasi `eas.json`
+Buka file `eas.json` yang baru terbentuk, dan pastikan pada profil `preview` (atau profil yang Anda inginkan) terdapat baris `"buildType": "apk"` agar yang dihasilkan adalah file APK, bukan AAB:
+```json
+{
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}
+```
+
+### 4. Jalankan Build
+Jalankan perintah berikut untuk memulai proses build di server Expo:
+```bash
+eas build -p android --profile preview
+```
+Tunggu hingga proses selesai, dan Anda akan diberikan link untuk mendownload file `.apk` tersebut.
+
+---
+
 ## 🐞 Penanganan Masalah Umum (Troubleshooting)
 
 ### Error OPFS Lock di Web (`NoModificationAllowedError`)
