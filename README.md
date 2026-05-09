@@ -1,6 +1,10 @@
 # ISTQB Simulator App 🎓
 
-![ISTQB Simulator App](./public/Apps.png)
+<p align="center">
+  <img src="./public/Apps.png" width="48%" alt="App Screenshot 1" />
+  &nbsp;
+  <img src="./public/Apps2.png" width="48%" alt="App Screenshot 2" />
+</p>
 
 Aplikasi latihan ujian sertifikasi ISTQB (International Software Testing Qualifications Board) yang komprehensif, cepat, dan bekerja secara offline (Local First). Aplikasi ini dibangun dengan framework **React Native (Expo)** menggunakan SQLite untuk penyimpanan datanya.
 
