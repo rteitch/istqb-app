@@ -1,0 +1,442 @@
+[
+  {
+    "id": 1,
+    "question": "Apa tujuan utama dari pengujian perangkat lunak?",
+    "options": [
+      "Mencegah cacat",
+      "Membuktikan perangkat lunak bebas dari cacat",
+      "Mencari cacat sebanyak mungkin",
+      "Menjamin perangkat lunak 100% sempurna"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 2,
+    "question": "Manakah dari berikut ini yang merupakan prinsip pengujian?",
+    "options": [
+      "Pengujian menyeluruh itu mungkin",
+      "Pengujian awal menghemat waktu dan uang",
+      "Pengujian menunjukkan tidak adanya cacat",
+      "Kelelahan pestisida tidak berlaku untuk pengujian otomatis"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 3,
+    "question": "Apa itu 'Debugging'?",
+    "options": [
+      "Mengeksekusi perangkat lunak untuk menemukan kegagalan",
+      "Proses menemukan, menganalisis, dan memperbaiki penyebab kegagalan",
+      "Merencanakan strategi pengujian",
+      "Memvalidasi persyaratan sistem"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 4,
+    "question": "Manakah yang BUKAN merupakan aktivitas dalam proses pengujian dasar?",
+    "options": [
+      "Perencanaan dan Kontrol",
+      "Analisis dan Desain",
+      "Pengembangan Kode",
+      "Evaluasi Kriteria Keluar dan Pelaporan"
+    ],
+    "answer": 2
+  },
+  {
+    "id": 5,
+    "question": "Apa yang dimaksud dengan 'Pesticide Paradox' dalam pengujian?",
+    "options": [
+      "Kasus uji yang sama jika diulang terus akan berhenti menemukan cacat baru",
+      "Banyak cacat berkumpul di modul yang sama",
+      "Pengujian bergantung pada konteks",
+      "Semua cacat bisa ditemukan jika diuji cukup lama"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 6,
+    "question": "Kapan sebaiknya pengujian dihentikan?",
+    "options": [
+      "Ketika waktu dan anggaran habis",
+      "Ketika tidak ada bug yang ditemukan",
+      "Ketika risiko telah dikurangi ke tingkat yang dapat diterima",
+      "Ketika manajer proyek memintanya"
+    ],
+    "answer": 2
+  },
+  {
+    "id": 7,
+    "question": "Manakah dari berikut ini yang merupakan contoh pengujian statis?",
+    "options": [
+      "Pengujian Unit",
+      "Review dokumen persyaratan (Requirements Review)",
+      "Pengujian Sistem",
+      "Pengujian Kinerja"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 8,
+    "question": "Apa peran utama seorang tester?",
+    "options": [
+      "Menulis kode sumber",
+      "Memperbaiki bug",
+      "Merancang, mengimplementasikan, dan mengeksekusi tes",
+      "Mengelola anggaran proyek"
+    ],
+    "answer": 2
+  },
+  {
+    "id": 9,
+    "question": "Apa perbedaan antara Kesalahan (Error) dan Cacat (Defect)?",
+    "options": [
+      "Manusia membuat kesalahan yang menghasilkan cacat pada kode",
+      "Cacat adalah kesalahan manusia, sedangkan Kesalahan ada di kode",
+      "Keduanya adalah hal yang sama persis",
+      "Error terjadi saat runtime, Defect saat kompilasi"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 10,
+    "question": "Pengujian mana yang dilakukan oleh pengguna akhir?",
+    "options": [
+      "Integration Testing",
+      "System Testing",
+      "User Acceptance Testing (UAT)",
+      "Unit Testing"
+    ],
+    "answer": 2
+  },
+  {
+    "id": 11,
+    "question": "Apa itu pengujian regresi (Regression Testing)?",
+    "options": [
+      "Menguji fungsi baru",
+      "Menguji kembali setelah perubahan untuk memastikan tidak ada cacat baru pada area yang tidak diubah",
+      "Menguji batas (boundary)",
+      "Menguji kinerja di bawah beban ekstrem"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 12,
+    "question": "Manakah yang merupakan teknik desain pengujian black-box?",
+    "options": [
+      "Statement Coverage",
+      "Equivalence Partitioning",
+      "Decision Coverage",
+      "Path Testing"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 13,
+    "question": "Jika rentang usia valid adalah 18 hingga 60 tahun. Berdasarkan Analisis Nilai Batas, manakah nilai yang tepat untuk diuji?",
+    "options": [
+      "17, 18, 19",
+      "17, 18, 60, 61",
+      "18, 30, 60",
+      "0, 18, 60, 100"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 14,
+    "question": "Apa tujuan dari pengujian integrasi?",
+    "options": [
+      "Menguji fungsi individu",
+      "Menguji interaksi antar komponen atau sistem",
+      "Menguji kebutuhan bisnis pengguna",
+      "Menguji struktur kode internal"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 15,
+    "question": "Manakah yang termasuk dalam atribut kualitas (non-fungsional)?",
+    "options": [
+      "Keamanan (Security)",
+      "Kalkulasi pajak",
+      "Pencetakan laporan",
+      "Pembaruan basis data"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 16,
+    "question": "Apa itu pengujian alfa (Alpha Testing)?",
+    "options": [
+      "Pengujian di lokasi pengembang oleh tim independen atau pelanggan",
+      "Pengujian di lokasi pelanggan oleh pelanggan",
+      "Pengujian operasional oleh administrator sistem",
+      "Pengujian komponen"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 17,
+    "question": "Manakah yang BUKAN merupakan jenis review?",
+    "options": [
+      "Walkthrough",
+      "Inspeksi (Inspection)",
+      "Pengujian Regresi",
+      "Review Teknis (Technical Review)"
+    ],
+    "answer": 2
+  },
+  {
+    "id": 18,
+    "question": "Apa tanggung jawab moderator dalam proses inspeksi?",
+    "options": [
+      "Menulis dokumen yang direview",
+      "Mencatat semua cacat yang ditemukan",
+      "Memimpin jalannya proses review",
+      "Memperbaiki cacat yang ditemukan"
+    ],
+    "answer": 2
+  },
+  {
+    "id": 19,
+    "question": "Manakah yang merupakan keuntungan dari otomatisasi pengujian?",
+    "options": [
+      "Mengurangi biaya awal secara instan",
+      "Cocok untuk semua jenis pengujian",
+      "Konsistensi dan pengulangan (repeatability) eksekusi tes",
+      "Menggantikan kebutuhan pengujian manual sepenuhnya"
+    ],
+    "answer": 2
+  },
+  {
+    "id": 20,
+    "question": "Apa yang dimaksud dengan metrik dalam pengujian perangkat lunak?",
+    "options": [
+      "Unit pengukuran untuk menilai proses atau produk",
+      "Alat pelaporan bug otomatis",
+      "Metode desain kasus uji",
+      "Standar penulisan kode"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 21,
+    "question": "Manakah dari berikut ini yang merupakan risiko produk?",
+    "options": [
+      "Anggota tim kunci sakit",
+      "Perangkat lunak gagal melakukan komputasi dengan benar",
+      "Keterlambatan penyediaan lingkungan uji",
+      "Pemotongan anggaran"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 22,
+    "question": "Apa tujuan dari Laporan Insiden (Incident Report)?",
+    "options": [
+      "Menyalahkan pengembang",
+      "Mendokumentasikan kejadian yang memerlukan investigasi lebih lanjut",
+      "Mencatat jam kerja tim",
+      "Merencanakan jadwal rilis"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 23,
+    "question": "Dalam siklus hidup pengujian (STLC), apa yang dilakukan pada tahap Implementasi dan Eksekusi Tes?",
+    "options": [
+      "Menulis rencana uji",
+      "Menulis kode program",
+      "Menjalankan kasus uji",
+      "Menulis persyaratan"
+    ],
+    "answer": 2
+  },
+  {
+    "id": 24,
+    "question": "Manakah yang merupakan contoh pengujian fungsional?",
+    "options": [
+      "Pengujian waktu respons (response time)",
+      "Pengujian fitur login",
+      "Pengujian penggunaan memori",
+      "Pengujian portabilitas"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 25,
+    "question": "Apa itu pengujian pemeliharaan (Maintenance Testing)?",
+    "options": [
+      "Pengujian selama pengembangan awal",
+      "Pengujian setelah perangkat lunak rilis dan dimodifikasi",
+      "Pengujian alat-alat pengujian",
+      "Pengujian spesifikasi desain"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 26,
+    "question": "Teknik State Transition digunakan untuk apa?",
+    "options": [
+      "Menguji alur sistem yang merespons event dan memiliki kondisi (state) berbeda",
+      "Menguji perhitungan matematis kompleks",
+      "Menguji struktur basis data",
+      "Menguji antarmuka pengguna grafis"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 27,
+    "question": "Apa arti dari 'Coverage' (Cakupan)?",
+    "options": [
+      "Tingkat kedalaman pengujian struktural atau fungsional yang telah dilakukan",
+      "Berapa banyak tester yang dibutuhkan",
+      "Berapa lama waktu untuk menguji",
+      "Jumlah alat pengujian yang digunakan"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 28,
+    "question": "Pengujian mana yang membutuhkan pengetahuan tentang struktur kode internal?",
+    "options": [
+      "Black-box testing",
+      "White-box testing",
+      "Experience-based testing",
+      "User Acceptance testing"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 29,
+    "question": "Apa itu pengujian eksploratori (Exploratory Testing)?",
+    "options": [
+      "Pengujian yang sepenuhnya terencana dan didokumentasikan",
+      "Pembelajaran tes, desain, dan eksekusi dilakukan secara bersamaan",
+      "Pengujian otomatis",
+      "Pengujian regresi"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 30,
+    "question": "Manakah dari berikut ini yang merupakan pendekatan pengujian berbasis risiko?",
+    "options": [
+      "Menguji semua komponen secara acak",
+      "Memprioritaskan pengujian pada area dengan risiko kegagalan dan dampak tertinggi",
+      "Hanya menguji area yang paling mudah",
+      "Menyerahkan pengujian kepada pengguna"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 31,
+    "question": "Apa itu Configuration Management dalam konteks pengujian?",
+    "options": [
+      "Mengonfigurasi komputer tester",
+      "Memastikan semua artefak proyek, seperti kode dan dokumen uji, diidentifikasi dan dikendalikan versinya",
+      "Mengatur jaringan perusahaan",
+      "Menyiapkan alat otomatisasi"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 32,
+    "question": "Siapa yang biasanya membuat Laporan Ringkasan Uji (Test Summary Report)?",
+    "options": [
+      "Pengembang",
+      "Test Manager",
+      "Business Analyst",
+      "Pengguna Akhir"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 33,
+    "question": "Apa yang dimaksud dengan kriteria masuk (Entry Criteria)?",
+    "options": [
+      "Syarat yang harus dipenuhi untuk memulai aktivitas pengujian",
+      "Syarat untuk menghentikan pengujian",
+      "Syarat untuk merilis produk",
+      "Syarat kelulusan ujian ISTQB"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 34,
+    "question": "Manakah yang merupakan alat eksekusi pengujian (Test Execution Tool)?",
+    "options": [
+      "Alat manajemen persyaratan",
+      "Alat peninjauan statis",
+      "Alat otomatisasi yang menjalankan tes pada antarmuka",
+      "Alat manajemen cacat"
+    ],
+    "answer": 2
+  },
+  {
+    "id": 35,
+    "question": "Dalam V-Model, Pengujian Unit (Unit Testing) memvalidasi fase apa?",
+    "options": [
+      "Persyaratan Bisnis",
+      "Spesifikasi Fungsional",
+      "Desain Arsitektur",
+      "Desain Detail (Detail Design) / Kode"
+    ],
+    "answer": 3
+  },
+  {
+    "id": 36,
+    "question": "Apa tujuan utama pengujian keamanan (Security Testing)?",
+    "options": [
+      "Mengevaluasi kerentanan sistem terhadap ancaman internal maupun eksternal",
+      "Menguji kecepatan aplikasi",
+      "Mengevaluasi kesesuaian antarmuka",
+      "Memastikan kode terkompilasi"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 37,
+    "question": "Manakah dari berikut yang merupakan teknik berbasis pengalaman?",
+    "options": [
+      "Equivalence Partitioning",
+      "Error Guessing",
+      "Statement Testing",
+      "Decision Table Testing"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 38,
+    "question": "Apa itu 'Test Oracle'?",
+    "options": [
+      "Sumber untuk menentukan hasil yang diharapkan (expected result) dari sebuah tes",
+      "Alat untuk memprediksi kapan proyek akan selesai",
+      "Seorang tester senior",
+      "Server database untuk menyimpan bug"
+    ],
+    "answer": 0
+  },
+  {
+    "id": 39,
+    "question": "Pengujian kinerja, pengujian beban, dan pengujian stres adalah contoh dari:",
+    "options": [
+      "Pengujian Fungsional",
+      "Pengujian Non-fungsional",
+      "Pengujian Struktural",
+      "Pengujian Regresi"
+    ],
+    "answer": 1
+  },
+  {
+    "id": 40,
+    "question": "Menurut standar ISTQB CTFL 4.0, apa skor kelulusan ujian Foundation Level?",
+    "options": [
+      "50%",
+      "60%",
+      "65% (26 dari 40)",
+      "75%"
+    ],
+    "answer": 2
+  }
+]

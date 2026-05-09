@@ -1,50 +1,102 @@
-# Welcome to your Expo app 👋
+# ISTQB Simulator App 🎓
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplikasi latihan ujian sertifikasi ISTQB (International Software Testing Qualifications Board) yang komprehensif, cepat, dan bekerja secara offline (Local First). Aplikasi ini dibangun dengan framework **React Native (Expo)** menggunakan SQLite untuk penyimpanan datanya.
 
-## Get started
+## ✨ Fitur Utama
 
-1. Install dependencies
+- **Offline-First & Cepat:** Semua soal dan histori disimpan secara lokal menggunakan `expo-sqlite`. Tidak membutuhkan koneksi internet untuk berlatih!
+- **Bank Soal:**
+  - Aplikasi sudah dilengkapi dengan Bank Soal *built-in* dari file `questions.json` yang akan langsung dimuat (seeded) ke dalam database saat pertama kali aplikasi dijalankan.
+  - Tersedia UI CRUD lengkap untuk mengelola bank soal Anda sendiri (Tambah, Edit, Hapus, dan Cari Soal).
+- **Dua Mode Utama:**
+  - **Mode Latihan (Practice Mode):** Cocok untuk belajar santai tanpa timer. Setiap pilihan ganda yang dijawab akan langsung menampilkan penjelasan (Kunci Jawaban & Alasan).
+  - **Mode Ujian (Exam Mode):** Simulasi ujian sesungguhnya menggunakan pengatur waktu mundur (Timer) dan batas waktu layaknya ujian sertifikasi resmi.
+- **Navigasi Cepat (Lompat Soal):** Tersedia *Jump Modal* dalam bentuk grid yang sangat mempermudah Anda untuk melihat soal mana saja yang belum atau sudah terjawab, dan melompat langsung ke soal yang diinginkan.
+- **Skoring Lengkap & Histori:** Lacak persentase kelulusan Anda dan lihat ulang detail pembahasan jawaban benar dan salah di fitur riwayat (History).
+- **Cross-Platform:** Berjalan optimal di Web, Android, maupun iOS.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## 🛠 Teknologi yang Digunakan
 
-   ```bash
-   npx expo start
-   ```
+Aplikasi ini menggunakan teknologi React Native modern:
+- **Framework:** Expo SDK 54 (React Native 0.81)
+- **Routing:** Expo Router v6 (File-based routing)
+- **Database:** `expo-sqlite` (dengan sistem OPFS/Origin Private File System untuk dukungan Web)
+- **State Management:** React Context API (untuk meminimalkan dependencies eksternal)
+- **Iconography:** Material Icons via `@expo/vector-icons`
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🚀 Panduan Instalasi & Menjalankan Aplikasi
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Aplikasi ini adalah proyek standar Expo. Ikuti langkah berikut untuk menjalankannya secara lokal:
 
-## Get a fresh project
+### 1. Persiapan Awal
+Pastikan Anda sudah menginstal **Node.js** (rekomendasi: versi 20+ LTS).
 
-When you're ready, run:
+### 2. Instalasi Dependensi
+Buka terminal dan navigasikan ke root direktori proyek (`istqb-app`), lalu jalankan perintah berikut:
 
 ```bash
-npm run reset-project
+npm install
+# atau
+yarn install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 3. Menjalankan Aplikasi
+Anda dapat memilih platform mana yang ingin dijalankan:
 
-## Learn more
+**Untuk Web (Browser):**
+```bash
+npm run web
+# atau
+npx expo start --web
+```
+*Catatan Web: Kami merekomendasikan menggunakan Google Chrome atau browser berbasis Chromium terbaru karena SQLite di Web sangat bergantung pada teknologi File System Access API (OPFS).*
 
-To learn more about developing your project with Expo, look at the following resources:
+**Untuk Android / iOS (Emulator atau Perangkat Fisik):**
+```bash
+npm start
+# lalu scan QR Code dengan aplikasi Expo Go di HP Anda, atau tekan 'a' untuk Android Emulator, dan 'i' untuk iOS Simulator.
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## 🐞 Penanganan Masalah Umum (Troubleshooting)
 
-Join our community of developers creating universal apps.
+### Error OPFS Lock di Web (`NoModificationAllowedError`)
+Saat melakukan pengembangan aktif dan memicu *hot-reload* (fitur auto-refresh setelah Anda menyimpan file), browser mungkin masih menahan akses ke file database SQLite (`istqb.db`).
+Hal ini menyebabkan error berbunyi *"Failed to execute 'createSyncAccessHandle' on 'FileSystemFileHandle'"*.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+**Solusi:** 
+Aplikasi ini sudah dipasangi sistem *delay render* sejenak untuk menunggu akses dilepas. Namun, jika error ini tetap muncul saat hot-reload:
+1. Cukup abaikan error di layar.
+2. Lakukan **Hard Refresh** di browser Anda (Tekan `Ctrl + F5` di Windows/Linux atau `Cmd + Shift + R` di Mac).
+
+### Menyetel Ulang Database
+Jika Anda ingin mengatur ulang seluruh aplikasi (menghapus histori ujian dan mengembalikan soal seperti awal/segar dari file `.json`), Anda bisa membersihkan cache/storage di Browser Anda (jika di Web) atau melakukan clear data aplikasi (jika di Android/iOS).
+
+---
+
+## 📂 Struktur Direktori Utama
+
+```
+📁 app/
+   📄 _layout.tsx      # Entry point Expo Router, memuat semua Provider (DB, Session, I18n)
+   📄 index.tsx        # Layar Beranda (Dashboard & Menu)
+   📄 quiz.tsx         # Layar Utama untuk Kuis (Latihan / Ujian)
+   📄 result.tsx       # Layar Hasil (Skor & Pembahasan)
+   📄 history.tsx      # Layar Histori Kelulusan
+   📄 select-category.tsx # Layar Pemilihan Topik & Setting Kuis (Jumlah Soal & Waktu)
+   📄 profile.tsx      # Layar Profil (Nama, Ganti Bahasa UI, Statistik)
+   📁 bank/            # Fitur Manajemen CRUD Bank Soal
+   📁 context/         # File Context State (DB, Session, dll)
+📁 components/         # Komponen UI Reusable (ScoreRing, ProgressBar, Modal, dll)
+📁 constants/          # Aturan Bisnis (List Kategori ISTQB, Aturan Passing Score)
+📁 data/
+   📄 questions.json   # Seed Data (Bank soal bawaan aplikasi)
+```
+
+## 📝 Lisensi
+Bebas untuk dimodifikasi dan dikembangkan lebih lanjut untuk keperluan pembelajaran. Selamat berlatih dan semoga lulus sertifikasi! 🎯

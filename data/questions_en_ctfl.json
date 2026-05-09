@@ -1,0 +1,192 @@
+[
+  {
+    "id": 1,
+    "question": "What is the primary goal of software testing?",
+    "options": [
+      "To prove the software is bug-free",
+      "To find defects and reduce risk of software failure",
+      "To replace the need for debugging",
+      "To make the software 100% perfect"
+    ],
+    "answer": 1,
+    "explanation": "The primary goal of testing is to find defects and provide information to reduce the risk of software failure in operation. Testing cannot prove the absence of defects.",
+    "explanation_a": "Testing cannot prove software is bug-free — this is a common misconception.",
+    "explanation_b": "Correct. Testing reduces risk of failure by finding defects before release.",
+    "explanation_c": "Debugging is a separate activity from testing.",
+    "explanation_d": "100% perfection is unattainable; testing aims to reduce risk to an acceptable level.",
+    "language": "en",
+    "category": "CTFL",
+    "level": "Foundation"
+  },
+  {
+    "id": 2,
+    "question": "Which of the following is a testing principle according to ISTQB?",
+    "options": [
+      "Exhaustive testing is possible with enough time",
+      "Testing shows the presence of defects, not their absence",
+      "Testing only applies to the final product",
+      "Defects are always uniformly distributed across the system"
+    ],
+    "answer": 1,
+    "explanation": "One of the 7 ISTQB testing principles states that testing can show that defects are present, but cannot prove that there are no defects.",
+    "explanation_a": "Exhaustive testing is impossible — this is another ISTQB principle.",
+    "explanation_b": "Correct. Testing can show defects exist but cannot prove absence of defects.",
+    "explanation_c": "Testing applies throughout all phases of the SDLC.",
+    "explanation_d": "Defects tend to cluster in a small number of modules (Defect Clustering principle).",
+    "language": "en",
+    "category": "CTFL",
+    "level": "Foundation"
+  },
+  {
+    "id": 3,
+    "question": "What does 'Pesticide Paradox' mean in software testing?",
+    "options": [
+      "Using automated tests removes the need for manual testing",
+      "If the same tests are repeated, they stop finding new defects",
+      "More testers always means better quality",
+      "Testing should be left until the end of development"
+    ],
+    "answer": 1,
+    "explanation": "The Pesticide Paradox is one of the 7 ISTQB principles. If the same tests are run repeatedly, they will eventually stop finding new defects, just as pesticides become less effective over time.",
+    "explanation_a": "Automation does not remove the need for manual testing.",
+    "explanation_b": "Correct. Repeating the same tests eventually stops finding new defects.",
+    "explanation_c": "More testers does not automatically improve quality.",
+    "explanation_d": "Early testing is recommended — not leaving it until the end.",
+    "language": "en",
+    "category": "CTFL",
+    "level": "Foundation"
+  },
+  {
+    "id": 4,
+    "question": "Which of the following is an example of a black-box testing technique?",
+    "options": [
+      "Statement Coverage",
+      "Decision Coverage",
+      "Equivalence Partitioning",
+      "Path Testing"
+    ],
+    "answer": 2,
+    "explanation": "Equivalence Partitioning is a black-box technique. Statement Coverage, Decision Coverage, and Path Testing are white-box (structural) techniques.",
+    "explanation_a": "Statement Coverage is a white-box technique based on code structure.",
+    "explanation_b": "Decision Coverage is also a white-box technique.",
+    "explanation_c": "Correct. Equivalence Partitioning partitions inputs into valid and invalid classes without knowing internal code.",
+    "explanation_d": "Path Testing is a white-box technique.",
+    "language": "en",
+    "category": "CTFL",
+    "level": "Foundation"
+  },
+  {
+    "id": 5,
+    "question": "What is the difference between an Error, a Defect, and a Failure?",
+    "options": [
+      "They are all the same thing",
+      "A human makes an Error → which causes a Defect in code → which may cause a Failure in operation",
+      "A Failure causes a Defect which causes an Error",
+      "Errors are found by testers, Defects by developers"
+    ],
+    "answer": 1,
+    "explanation": "ISTQB defines: Error = human mistake, Defect (Bug) = flaw in the artifact (code, doc), Failure = system behaves differently than expected when the defect is executed.",
+    "explanation_a": "These are distinct terms with specific ISTQB definitions.",
+    "explanation_b": "Correct. The chain is Error → Defect → Failure.",
+    "explanation_c": "The chain is reversed here; failures result from defects, not the other way around.",
+    "explanation_d": "Both testers and developers can find errors and defects.",
+    "language": "en",
+    "category": "CTFL",
+    "level": "Foundation"
+  },
+  {
+    "id": 6,
+    "question": "When should testing ideally start in a software project?",
+    "options": [
+      "Only after coding is complete",
+      "During the design phase",
+      "As early as possible in the development lifecycle",
+      "Only when the customer requests it"
+    ],
+    "answer": 2,
+    "explanation": "Early testing (shift-left) is one of the 7 ISTQB principles. Starting testing activities early reduces the cost of fixing defects significantly.",
+    "explanation_a": "Starting after coding means defects discovered will be expensive to fix.",
+    "explanation_b": "Testing activities like review can start even before design.",
+    "explanation_c": "Correct. Early testing saves time and money by catching defects sooner.",
+    "explanation_d": "Testing should be planned proactively, not reactively.",
+    "language": "en",
+    "category": "CTFL",
+    "level": "Foundation"
+  },
+  {
+    "id": 7,
+    "question": "Which testing level validates the system against business requirements and is often performed by end users?",
+    "options": [
+      "Unit Testing",
+      "Integration Testing",
+      "System Testing",
+      "Acceptance Testing"
+    ],
+    "answer": 3,
+    "explanation": "Acceptance Testing (including User Acceptance Testing - UAT) validates the system against business and user requirements. It is often the final testing phase before go-live.",
+    "explanation_a": "Unit Testing tests individual components/modules.",
+    "explanation_b": "Integration Testing tests interactions between components.",
+    "explanation_c": "System Testing tests the complete integrated system against system requirements.",
+    "explanation_d": "Correct. Acceptance Testing validates business readiness, often done by end users.",
+    "language": "en",
+    "category": "CTFL",
+    "level": "Foundation"
+  },
+  {
+    "id": 8,
+    "question": "In Boundary Value Analysis (BVA), if a field accepts values from 1 to 100, which values should be tested?",
+    "options": [
+      "1, 50, 100",
+      "0, 1, 100, 101",
+      "1, 2, 99, 100",
+      "0, 1, 2, 99, 100, 101"
+    ],
+    "answer": 3,
+    "explanation": "BVA tests values at and around boundaries. For range 1-100: 0 (below min), 1 (min), 2 (just above min), 99 (just below max), 100 (max), 101 (above max). This gives 6 test values.",
+    "explanation_a": "This misses boundary neighbors and invalid values.",
+    "explanation_b": "Only tests exact boundaries and their immediate invalid neighbors, missing inner boundaries.",
+    "explanation_c": "Misses the invalid values just outside the boundary.",
+    "explanation_d": "Correct. Complete BVA includes below, at, and above each boundary.",
+    "language": "en",
+    "category": "CTFL",
+    "level": "Foundation"
+  },
+  {
+    "id": 9,
+    "question": "What is a test oracle?",
+    "options": [
+      "A database tool used by testers",
+      "A source that provides the expected results to compare against actual results",
+      "An automated testing framework",
+      "A senior tester who reviews test cases"
+    ],
+    "answer": 1,
+    "explanation": "A test oracle is a mechanism to determine expected results. It can be a specification, existing system, user knowledge, or code. Without an oracle, testers cannot verify if test results are correct.",
+    "explanation_a": "Oracle is a concept, not a database tool (despite sharing the name).",
+    "explanation_b": "Correct. A test oracle provides the basis for expected results.",
+    "explanation_c": "A test oracle is not a testing framework.",
+    "explanation_d": "A senior tester is not what ISTQB defines as a test oracle.",
+    "language": "en",
+    "category": "CTFL",
+    "level": "Foundation"
+  },
+  {
+    "id": 10,
+    "question": "What is regression testing?",
+    "options": [
+      "Testing new features after a release",
+      "Re-running tests after changes to confirm no previously-working functionality is broken",
+      "Testing system performance under heavy load",
+      "Testing by end users in production"
+    ],
+    "answer": 1,
+    "explanation": "Regression testing is performed after changes (fixes, new features, patches) to ensure that previously working parts of the system have not been broken by the changes.",
+    "explanation_a": "Testing new features is confirmation testing or feature testing.",
+    "explanation_b": "Correct. Regression testing protects existing functionality after changes.",
+    "explanation_c": "Load testing is a type of performance testing.",
+    "explanation_d": "Production testing by end users is operational acceptance testing.",
+    "language": "en",
+    "category": "CTFL",
+    "level": "Foundation"
+  }
+]

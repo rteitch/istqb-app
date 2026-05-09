@@ -1,24 +1,26 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { I18nProvider } from './context/I18nContext';
+import { AppDatabaseProvider } from './context/DatabaseContext';
+import { SessionProvider } from './context/SessionContext';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <I18nProvider>
+      <AppDatabaseProvider>
+        <SessionProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="profile" />
+            <Stack.Screen name="select-category" />
+            <Stack.Screen name="quiz" />
+            <Stack.Screen name="result" />
+            <Stack.Screen name="history" />
+            <Stack.Screen name="bank/index" />
+            <Stack.Screen name="bank/add" />
+            <Stack.Screen name="bank/[id]" />
+          </Stack>
+        </SessionProvider>
+      </AppDatabaseProvider>
+    </I18nProvider>
   );
 }
