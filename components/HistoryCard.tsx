@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { ExamSessionData } from '../app/context/SessionContext';
-import { getLevelColor, getLevelByCategory } from '../constants/istqb';
+import { getLevelByCategory } from '../constants/istqb';
 import ProgressBar from './ProgressBar';
 
 interface HistoryCardProps {
   session: ExamSessionData;
   onPress: () => void;
+  onDelete?: () => void;
 }
 
 const formatDate = (dateStr: string) => {
@@ -20,7 +22,7 @@ const formatDate = (dateStr: string) => {
   });
 };
 
-export default function HistoryCard({ session, onPress }: HistoryCardProps) {
+export default function HistoryCard({ session, onPress, onDelete }: HistoryCardProps) {
   const levelInfo = getLevelByCategory(session.category);
   const levelColor = levelInfo?.color ?? '#1565C0';
   const isPassed = session.passed === 1;
@@ -59,6 +61,11 @@ export default function HistoryCard({ session, onPress }: HistoryCardProps) {
           {session.correct_answers}/{session.total_questions} benar
         </Text>
         <Text style={styles.meta}>{formatDate(session.finished_at)}</Text>
+        {onDelete && (
+          <TouchableOpacity onPress={onDelete} style={styles.deleteBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <MaterialIcons name="delete-outline" size={16} color="#EF4444" />
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -129,5 +136,8 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 11,
     color: '#94A3B8',
+  },
+  deleteBtn: {
+    padding: 2,
   },
 });

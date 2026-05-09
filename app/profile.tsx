@@ -1,13 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ScrollView, Alert, SafeAreaView, StatusBar, Platform,
+  ScrollView, SafeAreaView, StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useI18n } from './context/I18nContext';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 
 interface CategoryStat {
   category: string;
@@ -20,6 +21,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
   const { lang, setLang } = useI18n();
+  const { showAlert, showConfirm, Dialog } = useConfirmDialog();
   const [name, setName] = useState('');
   const [savedName, setSavedName] = useState('');
   const [userId, setUserId] = useState<number | null>(null);
@@ -46,9 +48,9 @@ export default function ProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!name.trim()) { 
-      if (Platform.OS === 'web') alert('Nama tidak boleh kosong'); else Alert.alert('Error', 'Nama tidak boleh kosong'); 
-      return; 
+    if (!name.trim()) {
+      showAlert({ title: 'Error', message: 'Nama tidak boleh kosong' });
+      return;
     }
     try {
       if (userId) {
@@ -58,17 +60,56 @@ export default function ProfileScreen() {
         setUserId(Number(result.lastInsertRowId));
       }
       setSavedName(name.trim());
-      if (Platform.OS === 'web') alert('Profil berhasil disimpan!'); else Alert.alert('Tersimpan', `Profil berhasil disimpan!`);
-    } catch (e) { 
-      if (Platform.OS === 'web') alert('Gagal menyimpan profil'); else Alert.alert('Error', 'Gagal menyimpan profil'); 
+      showAlert({ title: 'Tersimpan', message: 'Profil berhasil disimpan!' });
+    } catch (e) {
+      showAlert({ title: 'Error', message: 'Gagal menyimpan profil' });
     }
+  };
+
+  const handleResetDatabase = () => {
+    showConfirm({
+      title: 'Reset Database',
+      message: 'Apakah Anda yakin ingin mengembalikan bank soal ke kondisi awal (default)? Semua riwayat ujian juga akan terhapus. Aplikasi perlu dimuat ulang.',
+      confirmText: 'Ya, Reset',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await db.execAsync(`
+            PRAGMA foreign_keys = OFF;
+            DELETE FROM exam_session_answers;
+            DELETE FROM exam_sessions;
+            DELETE FROM question_translations;
+            DELETE FROM questions;
+            PRAGMA foreign_keys = ON;
+          `);
+          showAlert({ 
+            title: 'Berhasil', 
+            message: 'Database telah direset. Silakan tutup dan buka kembali aplikasi ini agar soal bawaan (default) dimuat ulang.' 
+          });
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
+        } catch (e) {
+          showAlert({ title: 'Error', message: 'Gagal mereset database' });
+        }
+      }
+    });
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1E293B" />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity 
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/');
+            }
+          }} 
+          style={styles.backBtn}
+        >
           <MaterialIcons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profil Saya</Text>
@@ -138,8 +179,23 @@ export default function ProfileScreen() {
             ))}
           </View>
         )}
+
+        {/* Danger Zone */}
+        <View style={styles.card}>
+          <Text style={[styles.fieldLabel, { color: '#EF4444' }]}>Zona Berbahaya</Text>
+          <Text style={styles.dangerDesc}>
+            Menghapus seluruh soal tambahan yang pernah Anda buat dan mengembalikan bank soal ke kondisi awal (default 50 soal). Riwayat ujian juga akan terhapus.
+          </Text>
+          <TouchableOpacity style={styles.resetBtn} onPress={handleResetDatabase}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialIcons name="warning" size={18} color="white" style={{ marginRight: 8 }} />
+              <Text style={styles.resetBtnText}>Reset Database & Bank Soal</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
         <View style={{ height: 40 }} />
       </ScrollView>
+      {Dialog}
     </SafeAreaView>
   );
 }
@@ -168,4 +224,7 @@ const styles = StyleSheet.create({
   statCat: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
   statSub: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
   statAvg: { fontSize: 20, fontWeight: '800', color: '#3B82F6' },
+  dangerDesc: { fontSize: 13, color: '#64748B', marginBottom: 14, lineHeight: 20 },
+  resetBtn: { backgroundColor: '#EF4444', borderRadius: 10, padding: 14, alignItems: 'center', justifyContent: 'center' },
+  resetBtnText: { color: 'white', fontSize: 14, fontWeight: '700' },
 });

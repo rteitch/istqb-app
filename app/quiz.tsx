@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Alert, ActivityIndicator, SafeAreaView, StatusBar, Platform, Modal,
+  ActivityIndicator, SafeAreaView, StatusBar, Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSession, QuestionData } from './context/SessionContext';
 import { getLevelColor } from '../constants/istqb';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 
 type QuizMode = 'exam' | 'practice';
 
@@ -16,6 +17,7 @@ export default function QuizScreen() {
   const params = useLocalSearchParams();
   const db = useSQLiteContext();
   const { questions, setQuestions, answers, setAnswers, setActiveSessionId } = useSession();
+  const { showAlert, Dialog } = useConfirmDialog();
 
   const category = String(params.category ?? 'CTFL');
   const level = String(params.level ?? 'Foundation');
@@ -51,7 +53,6 @@ export default function QuizScreen() {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
-            submitExam(true);
             return 0;
           }
           return prev - 1;
@@ -63,18 +64,75 @@ export default function QuizScreen() {
     };
   }, [loading, mode, isPaused]);
 
+  // Auto-submit when time reaches 0
+  useEffect(() => {
+    if (mode === 'exam' && timeLeft === 0 && !saving) {
+      submitExam(true);
+    }
+  }, [timeLeft]);
+
   const fetchQuestions = async () => {
     try {
       const data = await db.getAllAsync<QuestionData>(
-        `SELECT * FROM questions WHERE category = ? AND language = ? ORDER BY RANDOM() LIMIT ?`,
-        [category, qLang, count]
+        `SELECT q.id, q.category, q.level, q.correct_answer,
+           COALESCE(qt_target.locale, qt_fallback.locale) as locale,
+           COALESCE(qt_target.question_text, qt_fallback.question_text) as question_text,
+           COALESCE(qt_target.option_a, qt_fallback.option_a) as option_a,
+           COALESCE(qt_target.option_b, qt_fallback.option_b) as option_b,
+           COALESCE(qt_target.option_c, qt_fallback.option_c) as option_c,
+           COALESCE(qt_target.option_d, qt_fallback.option_d) as option_d,
+           COALESCE(qt_target.explanation, qt_fallback.explanation) as explanation,
+           COALESCE(qt_target.explanation_a, qt_fallback.explanation_a) as explanation_a,
+           COALESCE(qt_target.explanation_b, qt_fallback.explanation_b) as explanation_b,
+           COALESCE(qt_target.explanation_c, qt_fallback.explanation_c) as explanation_c,
+           COALESCE(qt_target.explanation_d, qt_fallback.explanation_d) as explanation_d
+         FROM questions q
+         LEFT JOIN question_translations qt_target 
+           ON q.id = qt_target.question_id AND qt_target.locale = ?
+         LEFT JOIN question_translations qt_fallback 
+           ON q.id = qt_fallback.question_id AND qt_fallback.locale = 'id'
+         WHERE q.category = ? 
+         ORDER BY RANDOM() LIMIT ?`,
+        [qLang, category, count]
       );
-      setQuestions(data);
+
+      // Mengacak opsi jawaban untuk setiap soal
+      const shuffledData = data.map(q => {
+        const opts = [
+          { opt: q.option_a, exp: q.explanation_a, origIndex: 0 },
+          { opt: q.option_b, exp: q.explanation_b, origIndex: 1 },
+          { opt: q.option_c, exp: q.explanation_c, origIndex: 2 },
+          { opt: q.option_d, exp: q.explanation_d, origIndex: 3 }
+        ];
+
+        // Fisher-Yates shuffle
+        for (let i = opts.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [opts[i], opts[j]] = [opts[j], opts[i]];
+        }
+
+        const newCorrectAnswer = opts.findIndex(o => o.origIndex === q.correct_answer);
+
+        return {
+          ...q,
+          option_a: opts[0].opt,
+          explanation_a: opts[0].exp,
+          option_b: opts[1].opt,
+          explanation_b: opts[1].exp,
+          option_c: opts[2].opt,
+          explanation_c: opts[2].exp,
+          option_d: opts[3].opt,
+          explanation_d: opts[3].exp,
+          correct_answer: newCorrectAnswer
+        };
+      });
+
+      setQuestions(shuffledData);
       setAnswers({});
       setRevealedAnswers({});
     } catch (error) {
       console.error('Error fetching questions', error);
-      if (Platform.OS === 'web') alert('Gagal memuat soal'); else Alert.alert('Error', 'Gagal memuat soal');
+      showAlert({ title: 'Error', message: 'Gagal memuat soal' });
     } finally {
       setLoading(false);
     }
@@ -90,8 +148,8 @@ export default function QuizScreen() {
 
   const isTimeCritical = mode === 'exam' && timeLeft <= 300; // 5 menit terakhir
 
-  const handleSelectOption = (optionKey: string) => {
-    const newAnswers = { ...answers, [currentIndex]: optionKey };
+  const handleSelectOption = (optionIndex: number) => {
+    const newAnswers = { ...answers, [currentIndex]: optionIndex };
     setAnswers(newAnswers);
 
     // Practice mode: langsung reveal feedback
@@ -108,6 +166,7 @@ export default function QuizScreen() {
   };
 
   const confirmSubmit = () => {
+    if (saving) return;
     setShowSubmitModal(true);
   };
 
@@ -144,10 +203,28 @@ export default function QuizScreen() {
       for (let i = 0; i < questions.length; i++) {
         const userAns = answers[i] ?? null;
         const isCorrect = userAns === questions[i].correct_answer ? 1 : 0;
+        
+        const snapshotStr = JSON.stringify({
+          question_id: questions[i].id,
+          locale: questions[i].locale,
+          question_text: questions[i].question_text,
+          option_a: questions[i].option_a,
+          option_b: questions[i].option_b,
+          option_c: questions[i].option_c,
+          option_d: questions[i].option_d,
+          correct_answer: questions[i].correct_answer,
+          explanation: questions[i].explanation,
+          explanation_a: questions[i].explanation_a,
+          explanation_b: questions[i].explanation_b,
+          explanation_c: questions[i].explanation_c,
+          explanation_d: questions[i].explanation_d,
+          snapshot_at: new Date().toISOString()
+        });
+
         await db.runAsync(
-          `INSERT INTO exam_session_answers (session_id, question_id, user_answer, is_correct)
-           VALUES (?, ?, ?, ?)`,
-          [sessionId, questions[i].id, userAns, isCorrect]
+          `INSERT INTO exam_session_answers (session_id, question_id, user_answer, is_correct, question_snapshot)
+           VALUES (?, ?, ?, ?, ?)`,
+          [sessionId, questions[i].id, userAns !== null ? String(userAns) : null, isCorrect, snapshotStr]
         );
       }
 
@@ -155,8 +232,7 @@ export default function QuizScreen() {
       router.replace({ pathname: '/result', params: { sessionId: Number(sessionId) } } as any);
     } catch (error) {
       console.error('Error saving session', error);
-      if (Platform.OS === 'web') alert('Gagal menyimpan hasil ujian'); else Alert.alert('Error', 'Gagal menyimpan hasil ujian');
-    } finally {
+      showAlert({ title: 'Error', message: 'Gagal menyimpan hasil ujian' });
       setSaving(false);
     }
   };
@@ -190,25 +266,27 @@ export default function QuizScreen() {
   const progress = (answeredCount / questions.length) * 100;
 
   const optionsMap = [
-    { key: 'A', text: currentQ.option_a, explanation: currentQ.explanation_a },
-    { key: 'B', text: currentQ.option_b, explanation: currentQ.explanation_b },
-    { key: 'C', text: currentQ.option_c, explanation: currentQ.explanation_c },
-    { key: 'D', text: currentQ.option_d, explanation: currentQ.explanation_d },
+    { index: 0, text: currentQ.option_a, explanation: currentQ.explanation_a },
+    { index: 1, text: currentQ.option_b, explanation: currentQ.explanation_b },
+    { index: 2, text: currentQ.option_c, explanation: currentQ.explanation_c },
+    { index: 3, text: currentQ.option_d, explanation: currentQ.explanation_d },
   ];
 
-  const getOptionStyle = (optKey: string) => {
+  const getOptionLetter = (idx: number) => String.fromCharCode(65 + idx);
+
+  const getOptionStyle = (optIdx: number) => {
     if (!isRevealed) {
-      return userAnswer === optKey ? [styles.option, styles.optionSelected] : styles.option;
+      return userAnswer === optIdx ? [styles.option, styles.optionSelected] : styles.option;
     }
-    if (optKey === currentQ.correct_answer) return [styles.option, styles.optionCorrect];
-    if (optKey === userAnswer) return [styles.option, styles.optionWrong];
+    if (optIdx === currentQ.correct_answer) return [styles.option, styles.optionCorrect];
+    if (optIdx === userAnswer) return [styles.option, styles.optionWrong];
     return [styles.option, styles.optionDimmed];
   };
 
-  const getOptionTextStyle = (optKey: string) => {
-    if (!isRevealed) return userAnswer === optKey ? styles.optionTextSelected : styles.optionText;
-    if (optKey === currentQ.correct_answer) return styles.optionTextCorrect;
-    if (optKey === userAnswer) return styles.optionTextWrong;
+  const getOptionTextStyle = (optIdx: number) => {
+    if (!isRevealed) return userAnswer === optIdx ? styles.optionTextSelected : styles.optionText;
+    if (optIdx === currentQ.correct_answer) return styles.optionTextCorrect;
+    if (optIdx === userAnswer) return styles.optionTextWrong;
     return styles.optionTextDimmed;
   };
 
@@ -259,29 +337,29 @@ export default function QuizScreen() {
 
           {optionsMap.map((opt) => (
             <TouchableOpacity
-              key={opt.key}
-              style={getOptionStyle(opt.key)}
-              onPress={() => handleSelectOption(opt.key)}
+              key={opt.index}
+              style={getOptionStyle(opt.index)}
+              onPress={() => handleSelectOption(opt.index)}
               disabled={isRevealed}
               activeOpacity={0.8}
             >
               <View style={styles.optionRow}>
                 <View style={[
                   styles.optionBadge,
-                  userAnswer === opt.key && !isRevealed && { backgroundColor: levelColor },
-                  isRevealed && opt.key === currentQ.correct_answer && styles.optionBadgeCorrect,
-                  isRevealed && opt.key === userAnswer && opt.key !== currentQ.correct_answer && styles.optionBadgeWrong,
+                  userAnswer === opt.index && !isRevealed && { backgroundColor: levelColor },
+                  isRevealed && opt.index === currentQ.correct_answer && styles.optionBadgeCorrect,
+                  isRevealed && opt.index === userAnswer && opt.index !== currentQ.correct_answer && styles.optionBadgeWrong,
                 ]}>
                   <Text style={[
                     styles.optionBadgeText,
-                    (userAnswer === opt.key && !isRevealed) || (isRevealed && opt.key === currentQ.correct_answer) || (isRevealed && opt.key === userAnswer)
+                    (userAnswer === opt.index && !isRevealed) || (isRevealed && opt.index === currentQ.correct_answer) || (isRevealed && opt.index === userAnswer)
                       ? styles.optionBadgeTextLight
                       : null,
                   ]}>
-                    {opt.key}
+                    {getOptionLetter(opt.index)}
                   </Text>
                 </View>
-                <Text style={getOptionTextStyle(opt.key)}>{opt.text}</Text>
+                <Text style={getOptionTextStyle(opt.index)}>{opt.text}</Text>
               </View>
 
               {/* Practice mode: tampilkan penjelasan per opsi setelah reveal */}
@@ -383,7 +461,7 @@ export default function QuizScreen() {
                     setShowJumpModal(false);
                   }}
                 >
-                  <Text style={[styles.jumpBtnText, answers[idx] ? styles.jumpBtnTextAnswered : null]}>
+                  <Text style={[styles.jumpBtnText, answers[idx] !== undefined ? styles.jumpBtnTextAnswered : null]}>
                     {idx + 1}
                   </Text>
                 </TouchableOpacity>
@@ -412,6 +490,7 @@ export default function QuizScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalActionBtn, { backgroundColor: mode === 'practice' ? '#22C55E' : levelColor }]}
+                disabled={saving}
                 onPress={() => {
                   setShowSubmitModal(false);
                   submitExam(false);
@@ -457,6 +536,7 @@ export default function QuizScreen() {
         </View>
       </Modal>
 
+      {Dialog}
     </SafeAreaView>
   );
 }

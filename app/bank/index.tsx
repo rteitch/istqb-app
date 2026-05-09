@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Alert, TextInput, SafeAreaView, StatusBar, Platform, ScrollView,
+  TextInput, SafeAreaView, StatusBar, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -9,10 +9,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { QuestionData } from '../context/SessionContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { ISTQB_LEVELS, getLevelColor } from '../../constants/istqb';
+import { useConfirmDialog } from '../../components/ConfirmDialog';
 
 export default function BankScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { showConfirm, showAlert, Dialog } = useConfirmDialog();
   const [questions, setQuestions] = useState<QuestionData[]>([]);
   const [search, setSearch] = useState('');
   const [filterLevel, setFilterLevel] = useState('ALL');
@@ -22,29 +24,38 @@ export default function BankScreen() {
 
   const fetchQuestions = async () => {
     try {
-      const data = await db.getAllAsync<QuestionData>('SELECT * FROM questions ORDER BY id DESC');
+      const data = await db.getAllAsync<QuestionData>(
+        `SELECT q.id, q.category, q.level, q.correct_answer,
+           COALESCE(qt_id.question_text, qt_en.question_text) as question_text,
+           CASE WHEN qt_id.id IS NOT NULL AND qt_en.id IS NOT NULL THEN 'id, en'
+                WHEN qt_id.id IS NOT NULL THEN 'id'
+                WHEN qt_en.id IS NOT NULL THEN 'en'
+                ELSE 'unknown' END as locale
+         FROM questions q
+         LEFT JOIN question_translations qt_id ON q.id = qt_id.question_id AND qt_id.locale = 'id'
+         LEFT JOIN question_translations qt_en ON q.id = qt_en.question_id AND qt_en.locale = 'en'
+         ORDER BY q.id DESC`
+      );
       setQuestions(data);
     } catch (e) { console.error(e); }
   };
 
   const handleDelete = (id: number) => {
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm('Yakin ingin menghapus soal ini?')) {
-        deleteQuestion(id);
-      }
-    } else {
-      Alert.alert('Hapus Soal', 'Yakin ingin menghapus soal ini?', [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Hapus', style: 'destructive', onPress: () => deleteQuestion(id) },
-      ]);
-    }
-  };
-
-  const deleteQuestion = async (id: number) => {
-    try {
-      await db.runAsync('DELETE FROM questions WHERE id = ?', [id]);
-      fetchQuestions();
-    } catch (e) { console.error(e); }
+    showConfirm({
+      title: 'Hapus Soal',
+      message: 'Menghapus soal ini akan ikut menghapus SEMUA terjemahannya (Cascade Delete). Yakin ingin melanjutkan?',
+      confirmText: 'Hapus',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await db.runAsync('DELETE FROM questions WHERE id = ?', [id]);
+          fetchQuestions();
+          showAlert({ title: 'Terhapus', message: 'Soal berhasil dihapus' });
+        } catch (e) {
+          showAlert({ title: 'Error', message: 'Gagal menghapus soal' });
+        }
+      },
+    });
   };
 
   const allLevels = ['ALL', ...ISTQB_LEVELS.map((l) => l.level)];
@@ -158,7 +169,7 @@ export default function BankScreen() {
                 <View style={[s.catBadge, { backgroundColor: lvlColor + '20' }]}>
                   <Text style={[s.catBadgeText, { color: lvlColor }]}>{item.category}</Text>
                 </View>
-                <Text style={s.langTag}>{item.language?.toUpperCase()}</Text>
+                <Text style={s.langTag}>{item.locale?.toUpperCase()}</Text>
                 <View style={{ flex: 1 }} />
                 <Text style={s.cardId}>#{item.id}</Text>
               </View>
@@ -178,6 +189,7 @@ export default function BankScreen() {
           );
         }}
       />
+      {Dialog}
     </SafeAreaView>
   );
 }

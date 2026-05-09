@@ -84,7 +84,13 @@ export default function SelectCategoryScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity 
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/');
+          }} 
+          style={styles.backBtn}
+        >
           <MaterialIcons name="arrow-back" size={24} color="#1E293B" />
         </TouchableOpacity>
         <View>

@@ -7,7 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ExamSessionData, QuestionData, SessionAnswerData } from './context/SessionContext';
-import { getLevelColor, getLevelByCategory } from '../constants/istqb';
+import { getLevelColor, getLevelByCategory, getCategoryByCode } from '../constants/istqb';
 import ScoreRing from '../components/ScoreRing';
 
 interface AnswerWithQuestion extends SessionAnswerData {
@@ -16,7 +16,7 @@ interface AnswerWithQuestion extends SessionAnswerData {
   option_b: string;
   option_c: string;
   option_d: string;
-  correct_answer: string;
+  correct_answer: number;
   explanation: string | null;
   explanation_a: string | null;
   explanation_b: string | null;
@@ -46,18 +46,29 @@ export default function ResultScreen() {
       if (!s) return;
       setSession(s);
 
-      const rows = await db.getAllAsync<AnswerWithQuestion>(`
-        SELECT
-          esa.id, esa.session_id, esa.question_id, esa.user_answer, esa.is_correct,
-          q.question_text, q.option_a, q.option_b, q.option_c, q.option_d,
-          q.correct_answer, q.explanation,
-          q.explanation_a, q.explanation_b, q.explanation_c, q.explanation_d
-        FROM exam_session_answers esa
-        JOIN questions q ON q.id = esa.question_id
-        WHERE esa.session_id = ?
-        ORDER BY esa.id ASC
+      const rows = await db.getAllAsync<SessionAnswerData>(`
+        SELECT * FROM exam_session_answers WHERE session_id = ? ORDER BY id ASC
       `, [sid]);
-      setAnswers(rows);
+      
+      const mappedAnswers: AnswerWithQuestion[] = rows.map(r => {
+        let snap: any = {};
+        try { if (r.question_snapshot) snap = JSON.parse(r.question_snapshot); } catch(e) {}
+        return {
+          ...r,
+          question_text: snap.question_text || 'Soal tidak tersedia (Snapshot hilang)',
+          option_a: snap.option_a || '',
+          option_b: snap.option_b || '',
+          option_c: snap.option_c || '',
+          option_d: snap.option_d || '',
+          correct_answer: snap.correct_answer ?? 0,
+          explanation: snap.explanation || null,
+          explanation_a: snap.explanation_a || null,
+          explanation_b: snap.explanation_b || null,
+          explanation_c: snap.explanation_c || null,
+          explanation_d: snap.explanation_d || null,
+        }
+      });
+      setAnswers(mappedAnswers);
     } catch (e) {
       console.error('Error loading result from DB', e);
     } finally {
@@ -85,22 +96,20 @@ export default function ResultScreen() {
   }
 
   const levelInfo = getLevelByCategory(session.category);
+  const categoryInfo = getCategoryByCode(session.category);
   const levelColor = levelInfo?.color ?? '#1565C0';
+  const passingScore = categoryInfo?.passingScore ?? 65;
   const isPassed = session.passed === 1;
   const score = Math.round(session.score_percent);
 
-  const optionLabels: Record<string, string> = { A: 'a', B: 'b', C: 'c', D: 'd' };
-  const getOptionText = (ans: AnswerWithQuestion, key: string) => {
-    const map: Record<string, string> = {
-      A: ans.option_a, B: ans.option_b, C: ans.option_c, D: ans.option_d,
-    };
-    return map[key] ?? '';
+  const getOptionLetter = (idx: number) => String.fromCharCode(65 + idx);
+  const getOptionText = (ans: AnswerWithQuestion, idx: number) => {
+    const map = [ans.option_a, ans.option_b, ans.option_c, ans.option_d];
+    return map[idx] ?? '';
   };
-  const getExplanationForOption = (ans: AnswerWithQuestion, key: string) => {
-    const map: Record<string, string | null> = {
-      A: ans.explanation_a, B: ans.explanation_b, C: ans.explanation_c, D: ans.explanation_d,
-    };
-    return map[key];
+  const getExplanationForOption = (ans: AnswerWithQuestion, idx: number) => {
+    const map = [ans.explanation_a, ans.explanation_b, ans.explanation_c, ans.explanation_d];
+    return map[idx];
   };
 
   return (
@@ -128,7 +137,7 @@ export default function ResultScreen() {
             </View>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Skor Minimal</Text>
-              <Text style={styles.statValue}>65%</Text>
+              <Text style={styles.statValue}>{passingScore}%</Text>
             </View>
           </View>
         </View>
@@ -144,7 +153,10 @@ export default function ResultScreen() {
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: levelColor }]}
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/');
+          }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <MaterialIcons name="refresh" size={16} color="white" style={{ marginRight: 6 }} />
@@ -198,13 +210,13 @@ export default function ResultScreen() {
               <Text style={styles.questionText}>{ans.question_text}</Text>
 
               {/* Options */}
-              {(['A', 'B', 'C', 'D'] as const).map((key) => {
-                const isCorrectOpt = key === correctKey;
-                const isUserOpt = key === userKey;
-                const optExp = getExplanationForOption(ans, key);
+              {[0, 1, 2, 3].map((idx) => {
+                const isCorrectOpt = idx === correctKey;
+                const isUserOpt = String(idx) === String(userKey);
+                const optExp = getExplanationForOption(ans, idx);
 
                 return (
-                  <View key={key} style={[
+                  <View key={idx} style={[
                     styles.optionItem,
                     isCorrectOpt && styles.optionItemCorrect,
                     isUserOpt && !isCorrectOpt && styles.optionItemWrong,
@@ -214,7 +226,7 @@ export default function ResultScreen() {
                       isCorrectOpt && { color: '#15803D' },
                       isUserOpt && !isCorrectOpt && { color: '#B91C1C' },
                     ]}>
-                      {key}.
+                      {getOptionLetter(idx)}.
                     </Text>
                     <View style={{ flex: 1 }}>
                       <Text style={[
@@ -222,7 +234,7 @@ export default function ResultScreen() {
                         isCorrectOpt && { color: '#15803D', fontWeight: '600' },
                         isUserOpt && !isCorrectOpt && { color: '#B91C1C' },
                       ]}>
-                        {getOptionText(ans, key)}
+                        {getOptionText(ans, idx)}
                         {isCorrectOpt && ' ✓'}
                         {isUserOpt && !isCorrectOpt && ' ✗ (jawabanmu)'}
                       </Text>

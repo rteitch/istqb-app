@@ -1,59 +1,94 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, SafeAreaView, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ISTQB_LEVELS } from '../../constants/istqb';
+import { useConfirmDialog } from '../../components/ConfirmDialog';
+
+interface LocaleState {
+  question_text: string;
+  option_a: string; option_b: string; option_c: string; option_d: string;
+  explanation: string;
+  explanation_a: string; explanation_b: string; explanation_c: string; explanation_d: string;
+}
+
+const createEmptyLocale = (): LocaleState => ({
+  question_text: '', option_a: '', option_b: '', option_c: '', option_d: '',
+  explanation: '', explanation_a: '', explanation_b: '', explanation_c: '', explanation_d: '',
+});
 
 export default function AddQuestionScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
-  const [qText, setQText] = useState('');
-  const [optA, setOptA] = useState('');
-  const [optB, setOptB] = useState('');
-  const [optC, setOptC] = useState('');
-  const [optD, setOptD] = useState('');
-  const [expA, setExpA] = useState('');
-  const [expB, setExpB] = useState('');
-  const [expC, setExpC] = useState('');
-  const [expD, setExpD] = useState('');
-  const [correctAnswer, setCorrectAnswer] = useState('A');
-  const [explanation, setExplanation] = useState('');
-  const [language, setLanguage] = useState('id');
+  const { showAlert, Dialog } = useConfirmDialog();
+
+  const [translations, setTranslations] = useState<Record<'id' | 'en', LocaleState>>({
+    id: createEmptyLocale(),
+    en: createEmptyLocale()
+  });
+
+  const [language, setLanguage] = useState<'id' | 'en'>('id');
+  const [correctAnswer, setCorrectAnswer] = useState(0);
   const [selectedLevel, setSelectedLevel] = useState('Foundation');
   const [selectedCategory, setSelectedCategory] = useState('CTFL');
+  const [isVerified, setIsVerified] = useState(false);
 
   const currentLevelInfo = ISTQB_LEVELS.find((l) => l.level === selectedLevel);
   const levelColor = currentLevelInfo?.color ?? '#1565C0';
 
   const handleSave = async () => {
-    if (!qText || !optA || !optB || !optC || !optD) {
-      if (Platform.OS === 'web') {
-        alert('Harap isi pertanyaan dan semua pilihan jawaban!');
-      } else {
-        Alert.alert('Error', 'Harap isi pertanyaan dan semua pilihan jawaban!');
-      }
+    const t = translations['id'];
+    if (!t.question_text.trim() || !t.option_a.trim() || !t.option_b.trim() || !t.option_c.trim() || !t.option_d.trim()) {
+      showAlert({ title: 'Error', message: 'Harap isi pertanyaan dan semua pilihan jawaban (Minimal Bahasa Indonesia)!' });
       return;
     }
     try {
-      await db.runAsync(
-        `INSERT INTO questions (question_text, option_a, option_b, option_c, option_d, correct_answer, explanation, explanation_a, explanation_b, explanation_c, explanation_d, language, category, level) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [qText, optA, optB, optC, optD, correctAnswer, explanation, expA, expB, expC, expD, language, selectedCategory, selectedLevel]
-      );
-      if (Platform.OS === 'web') {
-        alert('Soal berhasil ditambahkan');
-        router.back();
-      } else {
-        Alert.alert('Sukses', 'Soal berhasil ditambahkan', [{ text: 'OK', onPress: () => router.back() }]);
-      }
+      await db.withTransactionAsync(async () => {
+        const result = await db.runAsync(
+          `INSERT INTO questions (category, level, correct_answer) VALUES (?, ?, ?)`,
+          [selectedCategory, selectedLevel, correctAnswer]
+        );
+        const newId = result.lastInsertRowId;
+        
+        for (const loc of ['id', 'en'] as const) {
+          const trans = translations[loc];
+          if (trans.question_text.trim() !== '') {
+            await db.runAsync(
+              `INSERT INTO question_translations (question_id, locale, question_text, option_a, option_b, option_c, option_d, explanation, explanation_a, explanation_b, explanation_c, explanation_d, is_verified)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                newId, loc,
+                trans.question_text.trim(), trans.option_a.trim(), trans.option_b.trim(), trans.option_c.trim(), trans.option_d.trim(),
+                trans.explanation.trim(), trans.explanation_a.trim(), trans.explanation_b.trim(), trans.explanation_c.trim(), trans.explanation_d.trim(),
+                isVerified ? 1 : 0
+              ]
+            );
+          }
+        }
+      });
+      showAlert({
+        title: 'Sukses',
+        message: 'Soal berhasil ditambahkan',
+        onConfirm: () => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/bank');
+      },
+      });
     } catch (e) {
-      if (Platform.OS === 'web') {
-        alert('Gagal menyimpan soal');
-      } else {
-        Alert.alert('Error', 'Gagal menyimpan soal');
-      }
+      console.error(e);
+      showAlert({ title: 'Error', message: 'Gagal menyimpan soal' });
     }
   };
+
+  const updateTranslation = (field: keyof LocaleState, value: string) => {
+    setTranslations(prev => ({
+      ...prev,
+      [language]: { ...prev[language], [field]: value }
+    }));
+  };
+
+  const currentTrans = translations[language];
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -105,35 +140,42 @@ export default function AddQuestionScreen() {
 
         {/* Question */}
         <Text style={styles.label}>Pertanyaan *</Text>
-        <TextInput style={[styles.input, styles.textArea]} multiline value={qText} onChangeText={setQText} placeholder="Tulis pertanyaan di sini..." placeholderTextColor="#94A3B8" />
+        <TextInput style={[styles.input, styles.textArea]} multiline value={currentTrans.question_text} onChangeText={(v) => updateTranslation('question_text', v)} placeholder="Tulis pertanyaan di sini..." placeholderTextColor="#94A3B8" />
 
         {/* Options */}
-        {[{ key: 'A', val: optA, set: setOptA, exp: expA, setExp: setExpA },
-          { key: 'B', val: optB, set: setOptB, exp: expB, setExp: setExpB },
-          { key: 'C', val: optC, set: setOptC, exp: expC, setExp: setExpC },
-          { key: 'D', val: optD, set: setOptD, exp: expD, setExp: setExpD },
-        ].map(({ key, val, set, exp, setExp }) => (
+        {[{ key: 'A', idx: 0, val: currentTrans.option_a, field: 'option_a' as const, exp: currentTrans.explanation_a, expField: 'explanation_a' as const },
+          { key: 'B', idx: 1, val: currentTrans.option_b, field: 'option_b' as const, exp: currentTrans.explanation_b, expField: 'explanation_b' as const },
+          { key: 'C', idx: 2, val: currentTrans.option_c, field: 'option_c' as const, exp: currentTrans.explanation_c, expField: 'explanation_c' as const },
+          { key: 'D', idx: 3, val: currentTrans.option_d, field: 'option_d' as const, exp: currentTrans.explanation_d, expField: 'explanation_d' as const },
+        ].map(({ key, val, field, exp, expField }) => (
           <View key={key}>
             <Text style={styles.label}>Pilihan {key} *</Text>
-            <TextInput style={styles.input} value={val} onChangeText={set} placeholder={`Tulis pilihan ${key}`} placeholderTextColor="#94A3B8" />
+            <TextInput style={styles.input} value={val} onChangeText={(v) => updateTranslation(field, v)} placeholder={`Tulis pilihan ${key}`} placeholderTextColor="#94A3B8" />
             <Text style={styles.labelSub}>Penjelasan Pilihan {key} (opsional)</Text>
-            <TextInput style={[styles.input, styles.inputSub]} value={exp} onChangeText={setExp} placeholder={`Kenapa pilihan ${key} benar/salah...`} placeholderTextColor="#CBD5E1" multiline />
+            <TextInput style={[styles.input, styles.inputSub]} value={exp} onChangeText={(v) => updateTranslation(expField, v)} placeholder={`Kenapa pilihan ${key} benar/salah...`} placeholderTextColor="#CBD5E1" multiline />
           </View>
         ))}
 
         {/* Correct Answer */}
         <Text style={styles.label}>Jawaban Benar *</Text>
         <View style={styles.row}>
-          {['A', 'B', 'C', 'D'].map((opt) => (
-            <TouchableOpacity key={opt} style={[styles.btn, correctAnswer === opt && { backgroundColor: '#22C55E', borderColor: '#22C55E' }]} onPress={() => setCorrectAnswer(opt)}>
-              <Text style={[styles.btnText, correctAnswer === opt && styles.chipTextActive]}>{opt}</Text>
+          {['A', 'B', 'C', 'D'].map((opt, index) => (
+            <TouchableOpacity key={opt} style={[styles.btn, correctAnswer === index && { backgroundColor: '#22C55E', borderColor: '#22C55E' }]} onPress={() => setCorrectAnswer(index)}>
+              <Text style={[styles.btnText, correctAnswer === index && styles.chipTextActive]}>{opt}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* General Explanation */}
         <Text style={styles.label}>Pembahasan Umum</Text>
-        <TextInput style={[styles.input, styles.textArea]} multiline value={explanation} onChangeText={setExplanation} placeholder="Penjelasan umum mengapa jawaban tersebut benar..." placeholderTextColor="#94A3B8" />
+        <TextInput style={[styles.input, styles.textArea]} multiline value={currentTrans.explanation} onChangeText={(v) => updateTranslation('explanation', v)} placeholder="Penjelasan umum mengapa jawaban tersebut benar..." placeholderTextColor="#94A3B8" />
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 8, paddingHorizontal: 4 }}>
+          <Text style={[styles.label, { marginTop: 0, marginBottom: 0 }]}>Terverifikasi (Verified)</Text>
+          <TouchableOpacity onPress={() => setIsVerified(!isVerified)} style={{ padding: 4 }}>
+            <MaterialIcons name={isVerified ? 'check-circle' : 'radio-button-unchecked'} size={28} color={isVerified ? '#22C55E' : '#94A3B8'} />
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity style={[styles.saveBtn, { backgroundColor: levelColor }]} onPress={handleSave}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -143,6 +185,7 @@ export default function AddQuestionScreen() {
         </TouchableOpacity>
         <View style={{ height: 40 }} />
       </ScrollView>
+      {Dialog}
     </SafeAreaView>
   );
 }

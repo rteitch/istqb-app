@@ -11,10 +11,12 @@ import { ExamSessionData } from './context/SessionContext';
 import { ISTQB_LEVELS } from '../constants/istqb';
 import HistoryCard from '../components/HistoryCard';
 import EmptyState from '../components/EmptyState';
+import { useConfirmDialog } from '../components/ConfirmDialog';
 
 export default function HistoryScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
+  const { showConfirm, showAlert, Dialog } = useConfirmDialog();
   const [sessions, setSessions] = useState<ExamSessionData[]>([]);
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
 
@@ -33,6 +35,44 @@ export default function HistoryScreen() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleDelete = (id: number) => {
+    showConfirm({
+      title: 'Hapus Histori',
+      message: 'Yakin ingin menghapus histori ujian ini?',
+      confirmText: 'Hapus',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await db.runAsync('DELETE FROM exam_session_answers WHERE session_id = ?', [id]);
+          await db.runAsync('DELETE FROM exam_sessions WHERE id = ?', [id]);
+          loadSessions();
+          showAlert({ title: 'Terhapus', message: 'Histori berhasil dihapus' });
+        } catch (e) {
+          showAlert({ title: 'Error', message: 'Gagal menghapus histori' });
+        }
+      },
+    });
+  };
+
+  const handleClearAll = () => {
+    showConfirm({
+      title: 'Hapus Semua Histori',
+      message: 'Yakin ingin menghapus semua histori ujian? Tindakan ini tidak dapat dibatalkan.',
+      confirmText: 'Hapus Semua',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await db.runAsync('DELETE FROM exam_session_answers');
+          await db.runAsync('DELETE FROM exam_sessions');
+          loadSessions();
+          showAlert({ title: 'Berhasil', message: 'Semua histori berhasil dihapus' });
+        } catch (e) {
+          showAlert({ title: 'Error', message: 'Gagal menghapus histori' });
+        }
+      },
+    });
   };
 
   // Ambil daftar kategori unik dari sessions yang ada
@@ -60,10 +100,22 @@ export default function HistoryScreen() {
       <View>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity 
+            onPress={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace('/');
+            }} 
+            style={styles.backBtn}
+          >
             <MaterialIcons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Histori Ujian</Text>
+          <View style={{ flex: 1 }} />
+          {totalSessions > 0 && (
+            <TouchableOpacity onPress={handleClearAll} style={styles.clearBtn}>
+              <MaterialIcons name="delete-sweep" size={20} color="#FCA5A5" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Stats Banner */}
@@ -138,9 +190,11 @@ export default function HistoryScreen() {
                 params: { sessionId: item.id },
               } as any)
             }
+            onDelete={() => handleDelete(item.id)}
           />
         )}
       />
+      {Dialog}
     </SafeAreaView>
   );
 }
@@ -158,6 +212,7 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 20, fontWeight: '800', color: 'white' },
+  clearBtn: { padding: 8 },
   statsBanner: {
     flexDirection: 'row',
     backgroundColor: 'white',

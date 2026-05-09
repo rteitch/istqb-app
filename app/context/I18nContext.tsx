@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import * as SQLite from 'expo-sqlite';
 
 type Language = 'id' | 'en';
 
@@ -83,8 +84,46 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
+const SETTINGS_DB = 'istqb_settings.db';
+
 export const I18nProvider = ({ children }: { children: ReactNode }) => {
-  const [lang, setLang] = useState<Language>('id');
+  const [lang, setLangState] = useState<Language>('id');
+  const [loaded, setLoaded] = useState(false);
+
+  // Load saved language on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const db = await SQLite.openDatabaseAsync(SETTINGS_DB);
+        await db.execAsync(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
+        const row = await db.getFirstAsync<{ value: string }>('SELECT value FROM settings WHERE key = ?', ['ui_lang']);
+        if (row && (row.value === 'id' || row.value === 'en')) {
+          setLangState(row.value);
+        }
+        await db.closeAsync();
+      } catch {
+        // fallback to default 'id'
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, []);
+
+  const setLang = async (newLang: Language) => {
+    setLangState(newLang);
+    try {
+      const db = await SQLite.openDatabaseAsync(SETTINGS_DB);
+      await db.runAsync(
+        `INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`,
+        ['ui_lang', newLang]
+      );
+      await db.closeAsync();
+    } catch {
+      // silently fail
+    }
+  };
+
+  if (!loaded) return null;
 
   return (
     <I18nContext.Provider value={{ lang, setLang, t: translations[lang] }}>
